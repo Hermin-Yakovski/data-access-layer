@@ -64,7 +64,8 @@ class XlsxHandler(DataHandler):
             if not file_path.exists():
                 raise FileNotFoundError(f"File '{file_path}' not found")
 
-            with load_workbook(file_path, read_only=True, data_only=True) as wb:
+            wb = load_workbook(file_path, read_only=True, data_only=True)
+            try:
                 ws = wb[self.sheet_name]
 
                 # Get header row
@@ -87,6 +88,8 @@ class XlsxHandler(DataHandler):
                         if i < len(row):
                             row_dict[header] = row[i]
                     data.append(row_dict)
+            finally:
+                wb.close()
 
             # Apply column selection
             if cols is not None:
