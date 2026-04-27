@@ -106,7 +106,7 @@ class XlsxHandler(DataHandler):
 
             return data
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return []
@@ -187,7 +187,7 @@ class XlsxHandler(DataHandler):
 
             return len(data_to_store)
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return 0
