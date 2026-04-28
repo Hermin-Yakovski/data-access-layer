@@ -1,33 +1,40 @@
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "data-access-layer"
 version = "0.1.0"
 description = "General-purpose toolkits for data accessing with unified handler interface"
+authors = ["Hermin-Yakovski"]
 readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "MIT"}
-authors = [
-    {name = "Hermin-Yakovski"}
-]
-keywords = ["data", "access", "handler", "json", "csv", "xlsx", "pickle"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
+packages = [{include = "dal"}]
+include = ["dal/py.typed"]
 
-[project.optional-dependencies]
-xlsx = ["openpyxl>=3.0.0"]
+[tool.poetry.dependencies]
+python = "^3.11"
+openpyxl = {version = "^3.0.0", optional = true}
+
+[tool.poetry.extras]
+xlsx = ["openpyxl"]
 all = ["data-access-layer[xlsx]"]
-dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["dal*"]
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^7.0.0"
+ruff = "^0.8"
+mypy = "^1.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*"]
+ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
