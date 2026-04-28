@@ -47,8 +47,8 @@ class XlsxHandler(DataHandler):
         """Fetch data from XLSX file.
 
         Args:
-            path: Directory containing the file
-            table: Filename to fetch from
+            path: Path to the XLSX file
+            table: Sheet name to fetch from
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to return (applied after filtering)
@@ -59,16 +59,11 @@ class XlsxHandler(DataHandler):
         """
         try:
             if not path.exists():
-                raise FileNotFoundError(f"Directory '{path}' does not exist")
+                raise FileNotFoundError(f"File '{path}' does not exist")
 
-            file_path = path / table
-            if not file_path.exists():
-                raise FileNotFoundError(f"File '{file_path}' not found")
-
-            wb = load_workbook(file_path, read_only=True, data_only=True)
+            wb = load_workbook(path, read_only=True, data_only=True)
             try:
-                # TODO: Use table parameter as sheet name in subsequent task
-                ws = wb["Sheet1"]
+                ws = wb[table]
 
                 # Get header row
                 headers = None

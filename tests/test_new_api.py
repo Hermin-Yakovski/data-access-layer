@@ -40,3 +40,41 @@ class TestNewAPI:
         """XlsxHandler instance should not have sheet_name attribute."""
         handler = XlsxHandler()
         assert not hasattr(handler, 'sheet_name')
+
+    def test_fetch_uses_path_as_file_path_and_table_as_sheet_name(self, tmp_path):
+        """fetch() should use path as file path and table as sheet name."""
+        from openpyxl import Workbook
+
+        # Create a test file with multiple sheets
+        wb = Workbook()
+        ws1 = wb.active
+        ws1.title = "Users"
+        ws1.append(["name", "age"])
+        ws1.append(["Alice", 30])
+
+        ws2 = wb.create_sheet("Products")
+        ws2.append(["product", "price"])
+        ws2.append(["Widget", 9.99])
+
+        # Save to a specific file path
+        test_file = tmp_path / "data.xlsx"
+        wb.save(test_file)
+
+        # Test fetching with path as file and table as sheet
+        handler = XlsxHandler()
+
+        # Fetch from Users sheet
+        users = handler.fetch(path=test_file, table="Users")
+        assert users == [{"name": "Alice", "age": 30}]
+
+        # Fetch from Products sheet
+        products = handler.fetch(path=test_file, table="Products")
+        assert products == [{"product": "Widget", "price": 9.99}]
+
+    def test_fetch_raises_error_when_file_not_found(self, tmp_path):
+        """fetch() should raise FileNotFoundError when file path doesn't exist."""
+        handler = XlsxHandler()
+        nonexistent_file = tmp_path / "nonexistent.xlsx"
+
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            handler.fetch(path=nonexistent_file, table="Sheet1")
