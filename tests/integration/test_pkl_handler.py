@@ -140,3 +140,40 @@ class TestPklHandlerStoreIntegration:
         with open(test_file, 'rb') as f:
             stored_data = pickle.load(f)
         assert stored_data == [{"name": "Alice", "age": 30}]
+
+    def test_fetch_with_non_dict_items_raises_value_error(self, temp_dir):
+        """Fetching pickle with non-dict items raises ValueError."""
+        import pickle
+
+        test_file = temp_dir / "invalid.pkl"
+        # Create pickle with a list containing a string instead of dict
+        with open(test_file, 'wb') as f:
+            pickle.dump([{"name": "Alice"}, "not_a_dict", {"name": "Bob"}], f)
+
+        handler = PklHandler()
+        with pytest.raises(ValueError, match="item at index 1 is str"):
+            handler.fetch(path=temp_dir, table="invalid.pkl", strict=True)
+
+    def test_fetch_with_non_dict_items_strict_false(self, temp_dir):
+        """Fetching pickle with non-dict items returns empty list in lenient mode."""
+        import pickle
+
+        test_file = temp_dir / "invalid.pkl"
+        with open(test_file, 'wb') as f:
+            pickle.dump([{"name": "Alice"}, "not_a_dict"], f)
+
+        handler = PklHandler()
+        result = handler.fetch(path=temp_dir, table="invalid.pkl", strict=False)
+        assert result == []
+
+    def test_fetch_with_list_of_lists_raises_value_error(self, temp_dir):
+        """Fetching pickle that is a list of lists instead of list of dicts raises ValueError."""
+        import pickle
+
+        test_file = temp_dir / "invalid.pkl"
+        with open(test_file, 'wb') as f:
+            pickle.dump([["Alice", 30], ["Bob", 25]], f)
+
+        handler = PklHandler()
+        with pytest.raises(ValueError, match="item at index 0 is list"):
+            handler.fetch(path=temp_dir, table="invalid.pkl", strict=True)

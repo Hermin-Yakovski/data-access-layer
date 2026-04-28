@@ -58,6 +58,13 @@ class PklHandler(DataHandler):
                     f"Pickle file must contain a list of objects, got {type(data).__name__}"
                 )
 
+            # Validate that all items are dictionaries
+            for i, row in enumerate(data):
+                if not isinstance(row, dict):
+                    raise ValueError(
+                        f"Pickle file must contain a list of dictionaries, but item at index {i} is {type(row).__name__}"
+                    )
+
             # Apply column selection
             if cols is not None:
                 cols_set = set(cols)

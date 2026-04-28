@@ -127,3 +127,34 @@ class TestJsonHandlerStoreIntegration:
         with open(test_file, 'r') as f:
             stored_data = json.load(f)
         assert stored_data == initial_data + new_data
+
+    def test_fetch_with_non_dict_items_raises_value_error(self, temp_dir):
+        """Fetching JSON with non-dict items raises ValueError."""
+        test_file = temp_dir / "invalid.json"
+        # Create JSON with a list containing a string instead of dict
+        with open(test_file, 'w') as f:
+            json.dump([{"name": "Alice"}, "not_a_dict", {"name": "Bob"}], f)
+
+        handler = JsonHandler()
+        with pytest.raises(ValueError, match="item at index 1 is str"):
+            handler.fetch(path=temp_dir, table="invalid.json", strict=True)
+
+    def test_fetch_with_non_dict_items_strict_false(self, temp_dir):
+        """Fetching JSON with non-dict items returns empty list in lenient mode."""
+        test_file = temp_dir / "invalid.json"
+        with open(test_file, 'w') as f:
+            json.dump([{"name": "Alice"}, "not_a_dict"], f)
+
+        handler = JsonHandler()
+        result = handler.fetch(path=temp_dir, table="invalid.json", strict=False)
+        assert result == []
+
+    def test_fetch_with_list_of_lists_raises_value_error(self, temp_dir):
+        """Fetching JSON that is a list of lists instead of list of dicts raises ValueError."""
+        test_file = temp_dir / "invalid.json"
+        with open(test_file, 'w') as f:
+            json.dump([["Alice", 30], ["Bob", 25]], f)
+
+        handler = JsonHandler()
+        with pytest.raises(ValueError, match="item at index 0 is list"):
+            handler.fetch(path=temp_dir, table="invalid.json", strict=True)
