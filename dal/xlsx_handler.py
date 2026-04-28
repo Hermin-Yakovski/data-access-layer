@@ -170,18 +170,16 @@ class XlsxHandler(DataHandler):
                     wb.remove(wb.active)
 
             # For append mode, read existing data and merge
-            if not overwrite and path.exists() and table in wb.sheetnames:
+            will_merge_data = not overwrite and path.exists() and table in wb.sheetnames
+            if will_merge_data:
                 existing_data = self.fetch(path=path, table=table, strict=True)
                 data_to_store = existing_data + data_to_store
 
             # Handle sheet creation or selection
             if table in wb.sheetnames:
-                if overwrite:
-                    # Remove the sheet and create a new one
-                    wb.remove(wb[table])
-                    ws = wb.create_sheet(title=table, index=0)
-                else:
-                    ws = wb[table]
+                # Remove the sheet and create a new one (for both overwrite and merge modes)
+                wb.remove(wb[table])
+                ws = wb.create_sheet(title=table, index=0)
             else:
                 ws = wb.create_sheet(title=table)
 

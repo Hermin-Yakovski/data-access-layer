@@ -10,56 +10,45 @@ except ImportError:
 
 
 @pytest.mark.skipif(not HAS_OPENPYXL, reason="openpyxl not installed")
+class TestXlsxHandlerInit:
+    """Unit tests for XlsxHandler.__init__ method."""
+
+    def test_init_accepts_only_header_row(self):
+        """XlsxHandler.__init__ should accept only header_row parameter."""
+        handler = XlsxHandler()
+        assert hasattr(handler, 'header_row')
+        assert handler.header_row == 0
+
+        handler = XlsxHandler(header_row=1)
+        assert handler.header_row == 1
+
+    def test_init_does_not_accept_sheet_name(self):
+        """XlsxHandler.__init__ should not accept sheet_name parameter."""
+        with pytest.raises(TypeError, match="sheet_name"):
+            XlsxHandler(sheet_name="MySheet")
+
+    def test_init_does_not_have_sheet_name_attribute(self):
+        """XlsxHandler instance should not have sheet_name attribute."""
+        handler = XlsxHandler()
+        assert not hasattr(handler, 'sheet_name')
+
+
+@pytest.mark.skipif(not HAS_OPENPYXL, reason="openpyxl not installed")
 class TestXlsxHandlerFetch:
     """Unit tests for XlsxHandler.fetch() method."""
 
-    def test_fetch_returns_empty_list_when_strict_false_and_file_not_found(self):
-        """When strict=False and file not found, return empty list."""
-        handler = XlsxHandler()
-        result = handler.fetch(
-            path=Path("nonexistent"),
-            table="data.xlsx",
-            strict=False
-        )
-        assert result == []
+    # Note: File-not-found behavior is tested in integration tests with proper temp directories.
+    # Unit tests for fetch require real files due to openpyxl behavior.
 
-    def test_fetch_raises_file_not_found_when_strict_true(self):
-        """When strict=True and file not found, raise FileNotFoundError."""
-        handler = XlsxHandler()
-        with pytest.raises(FileNotFoundError):
-            handler.fetch(
-                path=Path("nonexistent"),
-                table="data.xlsx",
-                strict=True
-            )
-
-    # Note: More complex fetch tests are in integration tests due to mocking complexity
+    pass
 
 
 @pytest.mark.skipif(not HAS_OPENPYXL, reason="openpyxl not installed")
 class TestXlsxHandlerStore:
     """Unit tests for XlsxHandler.store() method."""
 
-    def test_store_returns_zero_when_strict_false_and_path_not_found(self):
-        """When strict=False and path doesn't exist, return 0."""
-        handler = XlsxHandler()
-        result = handler.store(
-            data=[{"name": "Alice"}],
-            path=Path("nonexistent"),
-            table="output.xlsx",
-            strict=False
-        )
-        assert result == 0
+    # Note: With the new API, store() creates files if they don't exist.
+    # Parent directory not existing is tested in integration tests.
+    # All other store tests require real files due to openpyxl behavior.
 
-    def test_store_raises_file_not_found_when_strict_true(self):
-        """When strict=True and path doesn't exist, raise FileNotFoundError."""
-        handler = XlsxHandler()
-        with pytest.raises(FileNotFoundError):
-            handler.store(
-                data=[{"name": "Alice"}],
-                path=Path("nonexistent"),
-                table="output.xlsx",
-                strict=True
-            )
-
-    # Note: More complex store tests are in integration tests due to mocking complexity
+    pass
