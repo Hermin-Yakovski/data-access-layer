@@ -12,7 +12,7 @@ class CsvHandler(DataHandler):
     delimiter and encoding configuration.
     """
 
-    def __init__(self, delimiter: str = ',', encoding: str = 'utf-8'):
+    def __init__(self, delimiter: str = ",", encoding: str = "utf-8"):
         """Initialize CsvHandler.
 
         Args:
@@ -52,7 +52,7 @@ class CsvHandler(DataHandler):
             if not file_path.exists():
                 raise FileNotFoundError(f"File '{file_path}' not found")
 
-            with open(file_path, 'r', encoding=self.encoding, newline='') as f:
+            with open(file_path, "r", encoding=self.encoding, newline="") as f:
                 reader = csv.DictReader(f, delimiter=self.delimiter)
                 data = list(reader)
 
@@ -71,7 +71,7 @@ class CsvHandler(DataHandler):
 
             return data
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return []
@@ -114,7 +114,9 @@ class CsvHandler(DataHandler):
             # Apply column selection
             if cols is not None:
                 cols_set = set(cols)
-                data_to_store = [{k: v for k, v in row.items() if k in cols_set} for row in data_to_store]
+                data_to_store = [
+                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
+                ]
 
             # Apply filtering
             if filter_ is not None:
@@ -133,13 +135,13 @@ class CsvHandler(DataHandler):
             # For append mode, read existing data and merge
             if not overwrite and file_path.exists():
                 existing_data = []
-                with open(file_path, 'r', encoding=self.encoding, newline='') as f:
+                with open(file_path, "r", encoding=self.encoding, newline="") as f:
                     reader = csv.DictReader(f, delimiter=self.delimiter)
                     existing_data = list(reader)
                 data_to_store = existing_data + data_to_store
 
             # Write to file
-            with open(file_path, 'w', encoding=self.encoding, newline='') as f:
+            with open(file_path, "w", encoding=self.encoding, newline="") as f:
                 if data_to_store:
                     fieldnames = list(data_to_store[0].keys())
                     writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=self.delimiter)
@@ -148,7 +150,7 @@ class CsvHandler(DataHandler):
 
             return len(data_to_store)
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return 0

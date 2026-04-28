@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit *)",
+      "Bash(python -m pytest --tb=short -q)",
+      "Bash(python -m pytest tests/unit/test_xlsx_handler.py -v --tb=short)",
+      "Bash(python -m ruff format --check dal/)",
+      "Bash(python -m ruff format dal/)",
+      "Bash(python -m pytest tests/ -v --tb=short)"
+    ]
+  }
+}

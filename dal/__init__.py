@@ -5,6 +5,7 @@ from .pkl_handler import PklHandler
 
 try:
     from .xlsx_handler import XlsxHandler
+
     _xlsx_available = True
 except ImportError:
     _xlsx_available = False

@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 try:
     from openpyxl import Workbook, load_workbook
+
     HAS_OPENPYXL = True
 except ImportError:
     HAS_OPENPYXL = False
@@ -19,7 +20,7 @@ class XlsxHandler(DataHandler):
     Requires openpyxl to be installed. If not available, imports will fail.
     """
 
-    def __init__(self, sheet_name: str = 'Sheet1', header_row: int = 0):
+    def __init__(self, sheet_name: str = "Sheet1", header_row: int = 0):
         """Initialize XlsxHandler.
 
         Args:
@@ -30,7 +31,9 @@ class XlsxHandler(DataHandler):
             ImportError: If openpyxl is not installed
         """
         if not HAS_OPENPYXL:
-            raise ImportError("openpyxl is required for XlsxHandler. Install it with: pip install openpyxl")
+            raise ImportError(
+                "openpyxl is required for XlsxHandler. Install it with: pip install openpyxl"
+            )
         self.sheet_name = sheet_name
         self.header_row = header_row
 
@@ -73,7 +76,10 @@ class XlsxHandler(DataHandler):
                 rows_data = []
                 for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
                     if row_idx == self.header_row:
-                        headers = [str(cell) if cell is not None else f"col_{i}" for i, cell in enumerate(row)]
+                        headers = [
+                            str(cell) if cell is not None else f"col_{i}"
+                            for i, cell in enumerate(row)
+                        ]
                     elif row_idx > self.header_row:
                         rows_data.append(row)
 
@@ -149,7 +155,9 @@ class XlsxHandler(DataHandler):
             # Apply column selection
             if cols is not None:
                 cols_set = set(cols)
-                data_to_store = [{k: v for k, v in row.items() if k in cols_set} for row in data_to_store]
+                data_to_store = [
+                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
+                ]
 
             # Apply filtering
             if filter_ is not None:
@@ -161,11 +169,7 @@ class XlsxHandler(DataHandler):
 
             # For append mode, read existing data and merge
             if not overwrite and file_path.exists():
-                existing_data = self.fetch(
-                    path=path,
-                    table=table,
-                    strict=True
-                )
+                existing_data = self.fetch(path=path, table=table, strict=True)
                 data_to_store = existing_data + data_to_store
 
             # Create workbook and write data

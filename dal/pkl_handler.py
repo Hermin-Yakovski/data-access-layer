@@ -50,11 +50,13 @@ class PklHandler(DataHandler):
             if not file_path.exists():
                 raise FileNotFoundError(f"File '{file_path}' not found")
 
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 data = pickle.load(f)
 
             if not isinstance(data, list):
-                raise ValueError(f"Pickle file must contain a list of objects, got {type(data).__name__}")
+                raise ValueError(
+                    f"Pickle file must contain a list of objects, got {type(data).__name__}"
+                )
 
             # Apply column selection
             if cols is not None:
@@ -71,7 +73,7 @@ class PklHandler(DataHandler):
 
             return data
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return []
@@ -114,7 +116,9 @@ class PklHandler(DataHandler):
             # Apply column selection
             if cols is not None:
                 cols_set = set(cols)
-                data_to_store = [{k: v for k, v in row.items() if k in cols_set} for row in data_to_store]
+                data_to_store = [
+                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
+                ]
 
             # Apply filtering
             if filter_ is not None:
@@ -126,18 +130,18 @@ class PklHandler(DataHandler):
 
             # For append mode, read existing data and merge
             if not overwrite and file_path.exists():
-                with open(file_path, 'rb') as f:
+                with open(file_path, "rb") as f:
                     existing_data = pickle.load(f)
                 if isinstance(existing_data, list):
                     data_to_store = existing_data + data_to_store
 
             # Write to file
-            with open(file_path, 'wb') as f:
+            with open(file_path, "wb") as f:
                 pickle.dump(data_to_store, f, protocol=self.protocol)
 
             return len(data_to_store)
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return 0

@@ -13,7 +13,7 @@ openpyxl = {version = "^3.0.0", optional = true}
 
 [tool.poetry.extras]
 xlsx = ["openpyxl"]
-all = ["data-access-layer[xlsx]"]
+all = ["openpyxl"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

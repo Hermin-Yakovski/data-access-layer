@@ -10,7 +10,7 @@ class DataHandler(ABC):
     behavior for column selection, filtering, and limiting.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Handler-specific initialization options."""
         pass
 

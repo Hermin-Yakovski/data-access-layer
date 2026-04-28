@@ -12,7 +12,7 @@ class JsonHandler(DataHandler):
     encoding and indentation configuration.
     """
 
-    def __init__(self, encoding: str = 'utf-8', indent: int = 2):
+    def __init__(self, encoding: str = "utf-8", indent: int = 2):
         """Initialize JsonHandler.
 
         Args:
@@ -52,11 +52,13 @@ class JsonHandler(DataHandler):
             if not file_path.exists():
                 raise FileNotFoundError(f"File '{file_path}' not found")
 
-            with open(file_path, 'r', encoding=self.encoding) as f:
+            with open(file_path, "r", encoding=self.encoding) as f:
                 data = json.load(f)
 
             if not isinstance(data, list):
-                raise ValueError(f"JSON file must contain a list of objects, got {type(data).__name__}")
+                raise ValueError(
+                    f"JSON file must contain a list of objects, got {type(data).__name__}"
+                )
 
             # Apply column selection
             if cols is not None:
@@ -73,7 +75,7 @@ class JsonHandler(DataHandler):
 
             return data
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return []
@@ -116,7 +118,9 @@ class JsonHandler(DataHandler):
             # Apply column selection
             if cols is not None:
                 cols_set = set(cols)
-                data_to_store = [{k: v for k, v in row.items() if k in cols_set} for row in data_to_store]
+                data_to_store = [
+                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
+                ]
 
             # Apply filtering
             if filter_ is not None:
@@ -128,18 +132,18 @@ class JsonHandler(DataHandler):
 
             # For append mode, read existing data and merge
             if not overwrite and file_path.exists():
-                with open(file_path, 'r', encoding=self.encoding) as f:
+                with open(file_path, "r", encoding=self.encoding) as f:
                     existing_data = json.load(f)
                 if isinstance(existing_data, list):
                     data_to_store = existing_data + data_to_store
 
             # Write to file
-            with open(file_path, 'w', encoding=self.encoding) as f:
+            with open(file_path, "w", encoding=self.encoding) as f:
                 json.dump(data_to_store, f, indent=self.indent, ensure_ascii=False)
 
             return len(data_to_store)
 
-        except Exception as e:
+        except Exception:
             if strict:
                 raise
             return 0
