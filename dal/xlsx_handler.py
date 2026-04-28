@@ -15,16 +15,15 @@ class XlsxHandler(DataHandler):
     """Handler for Excel XLSX format files.
 
     Supports fetching and storing data in XLSX format with optional
-    sheet_name and header_row configuration.
+    header_row configuration.
 
     Requires openpyxl to be installed. If not available, imports will fail.
     """
 
-    def __init__(self, sheet_name: str = "Sheet1", header_row: int = 0):
+    def __init__(self, header_row: int = 0):
         """Initialize XlsxHandler.
 
         Args:
-            sheet_name: Name of the sheet to read/write (default: 'Sheet1')
             header_row: Row number containing column headers (0-indexed, default: 0)
 
         Raises:
@@ -34,7 +33,6 @@ class XlsxHandler(DataHandler):
             raise ImportError(
                 "openpyxl is required for XlsxHandler. Install it with: pip install openpyxl"
             )
-        self.sheet_name = sheet_name
         self.header_row = header_row
 
     def fetch(
@@ -69,7 +67,8 @@ class XlsxHandler(DataHandler):
 
             wb = load_workbook(file_path, read_only=True, data_only=True)
             try:
-                ws = wb[self.sheet_name]
+                # TODO: Use table parameter as sheet name in subsequent task
+                ws = wb["Sheet1"]
 
                 # Get header row
                 headers = None
@@ -175,7 +174,8 @@ class XlsxHandler(DataHandler):
             # Create workbook and write data
             wb = Workbook()
             ws = wb.active
-            ws.title = self.sheet_name
+            # TODO: Use table parameter as sheet name in subsequent task
+            ws.title = "Sheet1"
 
             if data_to_store:
                 # Write header
