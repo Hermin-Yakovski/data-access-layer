@@ -74,6 +74,129 @@ class TestXlsxHandlerFetchIntegration:
         result = handler.fetch(path=temp_dir, table="data.xlsx")
         assert result == [{"name": "Alice", "age": 30}]
 
+    def test_fetch_with_column_selection(self, temp_dir):
+        """Fetch with column allowlist - only specified columns included."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws.append(["name", "age", "email"])
+        ws.append(["Alice", 30, "alice@test.com"])
+        ws.append(["Bob", 25, "bob@test.com"])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler()
+        result = handler.fetch(path=temp_dir, table="users.xlsx", cols=["name", "age"])
+        assert result == [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
+
+    def test_fetch_with_filter(self, temp_dir):
+        """Filter is applied to rows."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws.append(["name", "age"])
+        ws.append(["Alice", 30])
+        ws.append(["Bob", 25])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler()
+        result = handler.fetch(path=temp_dir, table="users.xlsx", filter_=lambda row: row["age"] > 25)
+        assert result == [{"name": "Alice", "age": 30}]
+
+    def test_fetch_with_limit(self, temp_dir):
+        """Limit is applied after filtering."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws.append(["name", "age"])
+        ws.append(["Alice", 30])
+        ws.append(["Bob", 25])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler()
+        result = handler.fetch(path=temp_dir, table="users.xlsx", limit=1)
+        assert len(result) == 1
+        assert result[0] == {"name": "Alice", "age": 30}
+
+    def test_fetch_with_filter_and_limit(self, temp_dir):
+        """Filter is applied first, then limit to filtered results."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        ws.append(["name", "age"])
+        ws.append(["Alice", 30])
+        ws.append(["Bob", 25])
+        ws.append(["Charlie", 35])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler()
+        result = handler.fetch(
+            path=temp_dir, table="users.xlsx", filter_=lambda row: row["age"] >= 30, limit=1
+        )
+        # Two rows match filter (Alice 30, Charlie 35), but only 1 returned due to limit
+        assert len(result) == 1
+
+    def test_fetch_with_header_row_not_found_raises_value_error(self, temp_dir):
+        """Fetching when header row is out of range raises ValueError."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        # Only add one row (header should be at row 0, but we set header_row to 5)
+        ws.append(["name", "age"])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler(header_row=5)
+        with pytest.raises(ValueError, match="Header row 5 not found"):
+            handler.fetch(path=temp_dir, table="users.xlsx", strict=True)
+
+    def test_fetch_with_header_row_not_found_strict_false(self, temp_dir):
+        """Fetching when header row is out of range returns empty list in lenient mode."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        # Only add one row (header should be at row 0, but we set header_row to 5)
+        ws.append(["name", "age"])
+
+        test_file = temp_dir / "users.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler(header_row=5)
+        result = handler.fetch(path=temp_dir, table="users.xlsx", strict=False)
+        assert result == []
+
+    def test_fetch_file_not_found_when_directory_exists(self, temp_dir):
+        """Fetching when directory exists but file doesn't exist raises FileNotFoundError."""
+        handler = XlsxHandler()
+        with pytest.raises(FileNotFoundError, match="not found"):
+            handler.fetch(path=temp_dir, table="missing.xlsx", strict=True)
+
+    def test_fetch_file_not_found_strict_false(self, temp_dir):
+        """Fetching when file doesn't exist returns empty list in lenient mode."""
+        handler = XlsxHandler()
+        result = handler.fetch(path=temp_dir, table="missing.xlsx", strict=False)
+        assert result == []
+
 
 @pytest.mark.skipif(not HAS_OPENPYXL, reason="openpyxl not installed")
 class TestXlsxHandlerStoreIntegration:
@@ -165,3 +288,63 @@ class TestXlsxHandlerStoreIntegration:
         assert rows[0] == ("name", "age")
         assert rows[1] == ("Alice", 30)
         assert rows[2] == ("Bob", 25)
+
+    def test_store_with_column_selection(self, temp_dir):
+        """Store with column allowlist - only specified columns stored."""
+        from openpyxl import load_workbook
+
+        test_data = [{"name": "Alice", "age": 30, "email": "alice@test.com"}]
+        handler = XlsxHandler()
+
+        handler.store(data=test_data, path=temp_dir, table="users.xlsx", cols=["name", "age"])
+
+        # Verify only specified columns stored
+        test_file = temp_dir / "users.xlsx"
+        wb = load_workbook(test_file)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        assert rows[0] == ("name", "age")
+        assert rows[1] == ("Alice", 30)
+        assert len(rows) == 2
+
+    def test_store_with_filter(self, temp_dir):
+        """Filter is applied before storing."""
+        from openpyxl import load_workbook
+
+        test_data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25}
+        ]
+        handler = XlsxHandler()
+
+        handler.store(data=test_data, path=temp_dir, table="users.xlsx", filter_=lambda row: row["age"] > 25)
+
+        # Verify only filtered data stored
+        test_file = temp_dir / "users.xlsx"
+        wb = load_workbook(test_file)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        assert rows[0] == ("name", "age")
+        assert rows[1] == ("Alice", 30)
+        assert len(rows) == 2
+
+    def test_store_with_limit(self, temp_dir):
+        """Limit is applied after filtering."""
+        from openpyxl import load_workbook
+
+        test_data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25}
+        ]
+        handler = XlsxHandler()
+
+        handler.store(data=test_data, path=temp_dir, table="users.xlsx", limit=1)
+
+        # Verify only 1 row stored
+        test_file = temp_dir / "users.xlsx"
+        wb = load_workbook(test_file)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        assert rows[0] == ("name", "age")
+        assert rows[1] == ("Alice", 30)
+        assert len(rows) == 2
