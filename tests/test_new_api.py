@@ -78,3 +78,95 @@ class TestNewAPI:
 
         with pytest.raises(FileNotFoundError, match="does not exist"):
             handler.fetch(path=nonexistent_file, table="Sheet1")
+
+    def test_store_uses_path_as_file_path_and_table_as_sheet_name(self, tmp_path):
+        """store() should use path as file path and table as sheet name."""
+        # Test data
+        users_data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25}
+        ]
+
+        handler = XlsxHandler()
+
+        # Store data to a specific file path with a specific sheet name
+        test_file = tmp_path / "data.xlsx"
+        rows_stored = handler.store(path=test_file, table="Users", data=users_data)
+
+        assert rows_stored == 2
+
+        # Verify the file was created at the correct location
+        assert test_file.exists()
+
+        # Verify the data was stored in the correct sheet
+        from openpyxl import load_workbook
+        wb = load_workbook(test_file)
+        assert "Users" in wb.sheetnames
+
+        # Verify the data in the Users sheet
+        ws = wb["Users"]
+        assert ws["A1"].value == "name"
+        assert ws["B1"].value == "age"
+        assert ws["A2"].value == "Alice"
+        assert ws["B2"].value == 30
+        assert ws["A3"].value == "Bob"
+        assert ws["B3"].value == 25
+
+    def test_store_overwrite_mode_replaces_sheet_content(self, tmp_path):
+        """store() with overwrite=True should replace existing sheet content."""
+        from openpyxl import Workbook, load_workbook
+
+        handler = XlsxHandler()
+
+        # Create initial data
+        test_file = tmp_path / "data.xlsx"
+        initial_data = [{"name": "Alice", "age": 30}]
+        handler.store(path=test_file, table="Users", data=initial_data)
+
+        # Overwrite with new data
+        new_data = [{"name": "Bob", "age": 25}]
+        handler.store(path=test_file, table="Users", data=new_data, overwrite=True)
+
+        # Verify only new data exists
+        wb = load_workbook(test_file)
+        ws = wb["Users"]
+        assert ws["A2"].value == "Bob"
+        assert ws["B2"].value == 25
+        # Should only have header + 1 row
+        assert ws.max_row == 2
+
+    def test_store_append_mode_adds_to_existing_sheet(self, tmp_path):
+        """store() with overwrite=False should append to existing sheet."""
+        from openpyxl import load_workbook
+
+        handler = XlsxHandler()
+
+        # Create initial data
+        test_file = tmp_path / "data.xlsx"
+        initial_data = [{"name": "Alice", "age": 30}]
+        handler.store(path=test_file, table="Users", data=initial_data)
+
+        # Append more data
+        more_data = [{"name": "Bob", "age": 25}]
+        handler.store(path=test_file, table="Users", data=more_data, overwrite=False)
+
+        # Verify both rows exist
+        wb = load_workbook(test_file)
+        ws = wb["Users"]
+        assert ws["A2"].value == "Alice"
+        assert ws["B2"].value == 30
+        assert ws["A3"].value == "Bob"
+        assert ws["B3"].value == 25
+        # Should have header + 2 rows
+        assert ws.max_row == 3
+
+    def test_store_raises_error_when_parent_directory_does_not_exist(self, tmp_path):
+        """store() should raise error when parent directory doesn't exist."""
+        handler = XlsxHandler()
+        data = [{"name": "Alice", "age": 30}]
+
+        # Path with non-existent parent directory
+        nonexistent_file = tmp_path / "subdir" / "data.xlsx"
+
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            handler.store(path=nonexistent_file, table="Users", data=data)

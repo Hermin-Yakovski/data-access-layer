@@ -58,6 +58,66 @@ class TestJsonHandlerFetchIntegration:
         with pytest.raises(ValueError):
             handler.fetch(path=temp_dir, table="invalid.json", strict=True)
 
+    def test_fetch_dict_not_list_raises_value_error(self, temp_dir):
+        """Fetching JSON dict object (not list) raises ValueError."""
+        test_file = temp_dir / "dict.json"
+        with open(test_file, 'w') as f:
+            json.dump({"name": "Alice"}, f)
+
+        handler = JsonHandler()
+        with pytest.raises(ValueError, match="must contain a list.*got dict"):
+            handler.fetch(path=temp_dir, table="dict.json", strict=True)
+
+    def test_fetch_string_not_list_raises_value_error(self, temp_dir):
+        """Fetching JSON string (not list) raises ValueError."""
+        test_file = temp_dir / "string.json"
+        with open(test_file, 'w') as f:
+            json.dump("just a string", f)
+
+        handler = JsonHandler()
+        with pytest.raises(ValueError, match="must contain a list.*got str"):
+            handler.fetch(path=temp_dir, table="string.json", strict=True)
+
+    def test_fetch_dict_not_list_strict_false(self, temp_dir):
+        """Fetching JSON dict object returns empty list in lenient mode."""
+        test_file = temp_dir / "dict.json"
+        with open(test_file, 'w') as f:
+            json.dump({"name": "Alice"}, f)
+
+        handler = JsonHandler()
+        result = handler.fetch(path=temp_dir, table="dict.json", strict=False)
+        assert result == []
+
+    def test_fetch_nonexistent_directory_raises_file_not_found(self, temp_dir):
+        """Fetching from non-existent directory raises FileNotFoundError."""
+        nonexistent_dir = temp_dir / "nonexistent"
+        handler = JsonHandler()
+
+        with pytest.raises(FileNotFoundError, match="Directory.*does not exist"):
+            handler.fetch(path=nonexistent_dir, table="users.json", strict=True)
+
+    def test_fetch_nonexistent_directory_strict_false(self, temp_dir):
+        """Fetching from non-existent directory returns empty list in lenient mode."""
+        nonexistent_dir = temp_dir / "nonexistent"
+        handler = JsonHandler()
+
+        result = handler.fetch(path=nonexistent_dir, table="users.json", strict=False)
+        assert result == []
+
+    def test_fetch_nonexistent_file_raises_file_not_found(self, temp_dir):
+        """Fetching non-existent file raises FileNotFoundError."""
+        handler = JsonHandler()
+
+        with pytest.raises(FileNotFoundError, match="File.*not found"):
+            handler.fetch(path=temp_dir, table="nonexistent.json", strict=True)
+
+    def test_fetch_nonexistent_file_strict_false(self, temp_dir):
+        """Fetching non-existent file returns empty list in lenient mode."""
+        handler = JsonHandler()
+
+        result = handler.fetch(path=temp_dir, table="nonexistent.json", strict=False)
+        assert result == []
+
 
 class TestJsonHandlerStoreIntegration:
     """Integration tests for JsonHandler.store() with real files."""

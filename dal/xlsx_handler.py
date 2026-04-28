@@ -126,22 +126,21 @@ class XlsxHandler(DataHandler):
 
         Args:
             data: List of row dictionaries to store
-            path: Directory containing the file
-            table: Filename to store to
+            path: Path to the XLSX file
+            table: Sheet name to store to
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to store (applied after filtering)
-            overwrite: If True, replace existing file; if False, append
+            overwrite: If True, replace existing sheet content; if False, append
             strict: If True, raise exceptions; if False, return 0 on error
 
         Returns:
             Number of rows stored
         """
         try:
-            if not path.exists():
-                raise FileNotFoundError(f"Directory '{path}' does not exist")
-
-            file_path = path / table
+            # Check if parent directory exists
+            if path.parent != Path('.') and not path.parent.exists():
+                raise FileNotFoundError(f"Parent directory '{path.parent}' does not exist")
 
             # Prepare data to store
             data_to_store = data.copy()
@@ -161,16 +160,33 @@ class XlsxHandler(DataHandler):
             if limit is not None:
                 data_to_store = data_to_store[:limit]
 
+            # Handle workbook creation or loading
+            if path.exists():
+                wb = load_workbook(path)
+            else:
+                wb = Workbook()
+                # Remove the default sheet if we're going to create a named one
+                if wb.active.title == "Sheet" and table != "Sheet":
+                    wb.remove(wb.active)
+
             # For append mode, read existing data and merge
-            if not overwrite and file_path.exists():
+            if not overwrite and path.exists() and table in wb.sheetnames:
                 existing_data = self.fetch(path=path, table=table, strict=True)
                 data_to_store = existing_data + data_to_store
 
-            # Create workbook and write data
-            wb = Workbook()
-            ws = wb.active
-            # TODO: Use table parameter as sheet name in subsequent task
-            ws.title = "Sheet1"
+            # Handle sheet creation or selection
+            if table in wb.sheetnames:
+                if overwrite:
+                    # Remove the sheet and create a new one
+                    wb.remove(wb[table])
+                    ws = wb.create_sheet(title=table, index=0)
+                else:
+                    ws = wb[table]
+            else:
+                ws = wb.create_sheet(title=table)
+
+            # Set the sheet title
+            ws.title = table
 
             if data_to_store:
                 # Write header
@@ -182,7 +198,7 @@ class XlsxHandler(DataHandler):
                     ws.append([row.get(h, "") for h in headers])
 
             # Save workbook
-            wb.save(file_path)
+            wb.save(path)
 
             return len(data_to_store)
 
