@@ -13,12 +13,24 @@ A unified Python data access layer providing a consistent interface for reading 
 
 ## Installation
 
+### Using pip (from PyPI)
+
 ```bash
 # Basic installation (JSON, CSV, Pickle support)
 pip install data-access-layer
 
 # With Excel support
 pip install data-access-layer[xlsx]
+```
+
+### Using Poetry (for development)
+
+```bash
+# Install with Poetry
+poetry add data-access-layer
+
+# Install with Excel support
+poetry add data-access-layer --extras xlsx
 ```
 
 ## Quick Start
