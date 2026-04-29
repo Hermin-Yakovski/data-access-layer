@@ -12,16 +12,18 @@ class SqliteHandler(DataHandler):
     Table must exist before storing data.
     """
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Optional[Path] = None):
         """Initialize SqliteHandler.
 
         Args:
-            path: Path to the SQLite database file
+            path: Optional default path to the SQLite database file.
+                  Can be overridden in fetch() calls.
         """
         self.path = path
 
     def fetch(
         self,
+        path: Path,
         table: str,
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
@@ -31,6 +33,7 @@ class SqliteHandler(DataHandler):
         """Fetch data from SQLite table.
 
         Args:
+            path: Path to the SQLite database file
             table: Table name to fetch from
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
@@ -41,8 +44,8 @@ class SqliteHandler(DataHandler):
             List of row dictionaries
         """
         try:
-            if not self.path.exists():
-                raise FileNotFoundError(f"Database file '{self.path}' does not exist")
+            if not path.exists():
+                raise FileNotFoundError(f"Database file '{path}' does not exist")
 
             # TODO: implement rest of fetch
             return []
