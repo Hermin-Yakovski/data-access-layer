@@ -12,15 +12,6 @@ class SqliteHandler(DataHandler):
     Table must exist before storing data.
     """
 
-    def __init__(self, path: Optional[Path] = None):
-        """Initialize SqliteHandler.
-
-        Args:
-            path: Optional default path to the SQLite database file.
-                  Can be overridden in fetch() calls.
-        """
-        self.path = path
-
     def fetch(
         self,
         path: Path,

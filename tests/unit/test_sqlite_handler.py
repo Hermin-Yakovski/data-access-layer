@@ -7,18 +7,10 @@ from dal.sqlite_handler import SqliteHandler
 class TestSqliteHandlerInit:
     """Unit tests for SqliteHandler.__init__ method."""
 
-    def test_init_with_path_parameter(self):
-        """SqliteHandler.__init__ should accept optional path parameter."""
-        db_path = Path("test.db")
-        handler = SqliteHandler(path=db_path)
-        assert hasattr(handler, 'path')
-        assert handler.path == db_path
-
-    def test_init_without_path_parameter(self):
-        """SqliteHandler should work without path parameter."""
+    def test_sqlite_handler_can_be_instantiated(self):
+        """SqliteHandler can be instantiated without parameters."""
         handler = SqliteHandler()
-        assert hasattr(handler, 'path')
-        assert handler.path is None
+        assert handler is not None
 
     def test_sqlite_handler_exported_from_dal_package(self):
         """SqliteHandler should be importable from dal package."""
