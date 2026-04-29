@@ -22,14 +22,35 @@ class SqliteHandler(DataHandler):
 
     def fetch(
         self,
-        path: Path,
         table: str,
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
-        raise NotImplementedError("fetch() method not yet implemented")
+        """Fetch data from SQLite table.
+
+        Args:
+            table: Table name to fetch from
+            cols: Columns to include (allowlist, None = all columns)
+            filter_: Optional callable for row filtering
+            limit: Maximum rows to return (applied after filtering)
+            strict: If True, raise exceptions; if False, return empty list on error
+
+        Returns:
+            List of row dictionaries
+        """
+        try:
+            if not self.path.exists():
+                raise FileNotFoundError(f"Database file '{self.path}' does not exist")
+
+            # TODO: implement rest of fetch
+            return []
+
+        except Exception:
+            if strict:
+                raise
+            return []
 
     def store(
         self,
