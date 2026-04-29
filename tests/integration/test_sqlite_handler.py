@@ -158,3 +158,67 @@ class TestSqliteHandlerStoreIntegration:
 
         with pytest.raises(Exception):  # Table doesn't exist
             handler.store(data=data, path=temp_db, table="users", strict=True)
+
+    def test_store_overwrite_clears_existing_data(self, temp_db):
+        """Store with overwrite=True clears existing data before inserting."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.execute("INSERT INTO users (name, age) VALUES ('Alice', 30)")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+
+        # Overwrite with new data
+        new_data = [{"name": "Bob", "age": 25}]
+        handler.store(data=new_data, path=temp_db, table="users", overwrite=True)
+
+        # Verify only new data exists
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age FROM users ORDER BY name")
+        rows = cursor.fetchall()
+        conn.close()
+        assert rows == [("Bob", 25)]
+
+    def test_store_append_adds_to_existing_data(self, temp_db):
+        """Store with overwrite=False appends to existing data."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.execute("INSERT INTO users (name, age) VALUES ('Alice', 30)")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+
+        # Append more data
+        more_data = [{"name": "Bob", "age": 25}]
+        handler.store(data=more_data, path=temp_db, table="users", overwrite=False)
+
+        # Verify both rows exist
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age FROM users ORDER BY name")
+        rows = cursor.fetchall()
+        conn.close()
+        assert rows == [("Alice", 30), ("Bob", 25)]
+
+    def test_store_overwrite_on_empty_table(self, temp_db):
+        """Store with overwrite=True on empty table works (DELETE is no-op, then inserts)."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        data = [{"name": "Alice", "age": 30}]
+        result = handler.store(data=data, path=temp_db, table="users", overwrite=True)
+
+        assert result == 1
+
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        count = cursor.fetchone()[0]
+        conn.close()
+        assert count == 1
