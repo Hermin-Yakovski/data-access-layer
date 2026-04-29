@@ -222,3 +222,108 @@ class TestSqliteHandlerStoreIntegration:
         count = cursor.fetchone()[0]
         conn.close()
         assert count == 1
+
+    def test_store_ignores_extra_columns_in_data(self, temp_db):
+        """Extra columns in data are silently ignored (only insert columns that exist)."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.close()
+
+        handler = SqliteHandler()
+        # Data has 'email' column which doesn't exist in table
+        data = [{"name": "Alice", "age": 30, "email": "alice@test.com"}]
+        result = handler.store(data=data, path=temp_db, table="users")
+
+        assert result == 1
+
+        # Verify only name and age were stored
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cursor.fetchall()]
+        conn.close()
+        assert columns == ["id", "name", "age"]
+        assert "email" not in columns
+
+    def test_store_inserts_null_for_missing_columns(self, temp_db):
+        """Missing columns in data get NULL inserted."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER, email TEXT)")
+        conn.close()
+
+        handler = SqliteHandler()
+        # Data missing 'age' and 'email'
+        data = [{"name": "Alice"}]
+        handler.store(data=data, path=temp_db, table="users")
+
+        # Verify NULL for missing columns
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age, email FROM users")
+        row = cursor.fetchone()
+        conn.close()
+        assert row == ("Alice", None, None)
+
+    def test_store_with_column_selection(self, temp_db):
+        """Store with column allowlist - only specified columns stored."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER, email TEXT)")
+        conn.close()
+
+        handler = SqliteHandler()
+        data = [{"name": "Alice", "age": 30, "email": "alice@test.com"}]
+        handler.store(data=data, path=temp_db, table="users", cols=["name", "age"])
+
+        # Verify only name and age were stored
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age, email FROM users")
+        row = cursor.fetchone()
+        conn.close()
+        assert row == ("Alice", 30, None)
+
+    def test_store_with_filter(self, temp_db):
+        """Filter is applied before storing."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.close()
+
+        handler = SqliteHandler()
+        data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25}
+        ]
+        result = handler.store(data=data, path=temp_db, table="users", filter_=lambda row: row["age"] > 25)
+
+        assert result == 1
+
+        # Verify only filtered data was stored
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age FROM users")
+        rows = cursor.fetchall()
+        conn.close()
+        assert rows == [("Alice", 30)]
+
+    def test_store_with_limit(self, temp_db):
+        """Limit is applied after filtering."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.close()
+
+        handler = SqliteHandler()
+        data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25}
+        ]
+        result = handler.store(data=data, path=temp_db, table="users", limit=1)
+
+        assert result == 1
+
+        # Verify only 1 row was stored
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        count = cursor.fetchone()[0]
+        conn.close()
+        assert count == 1
