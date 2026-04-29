@@ -47,8 +47,41 @@ class SqliteHandler(DataHandler):
             if not path.exists():
                 raise FileNotFoundError(f"Database file '{path}' does not exist")
 
-            # TODO: implement rest of fetch
-            return []
+            conn = sqlite3.connect(path)
+            cursor = conn.cursor()
+
+            # Check if table exists
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                (table,)
+            )
+            if cursor.fetchone() is None:
+                conn.close()
+                raise Exception(f"Table '{table}' does not exist in database '{path}'")
+
+            # Fetch all data
+            cursor.execute(f"SELECT * FROM {table}")
+            columns = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+            conn.close()
+
+            # Convert to list of dicts
+            data = [dict(zip(columns, row)) for row in rows]
+
+            # Apply column selection
+            if cols is not None:
+                cols_set = set(cols)
+                data = [{k: v for k, v in row.items() if k in cols_set} for row in data]
+
+            # Apply filtering
+            if filter_ is not None:
+                data = [row for row in data if filter_(row)]
+
+            # Apply limit (after filtering)
+            if limit is not None:
+                data = data[:limit]
+
+            return data
 
         except Exception:
             if strict:
