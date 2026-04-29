@@ -15,10 +15,15 @@ class TestSqliteHandlerInit:
         assert handler.path == db_path
 
     def test_init_without_path_parameter(self):
-        """SqliteHandler.__init__ should work without path parameter."""
+        """SqliteHandler should work without path parameter."""
         handler = SqliteHandler()
         assert hasattr(handler, 'path')
         assert handler.path is None
+
+    def test_sqlite_handler_exported_from_dal_package(self):
+        """SqliteHandler should be importable from dal package."""
+        from dal import SqliteHandler
+        assert SqliteHandler is not None
 
 
 class TestSqliteHandlerFetch:

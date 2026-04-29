@@ -2,6 +2,7 @@ from .abc import DataHandler
 from .json_handler import JsonHandler
 from .csv_handler import CsvHandler
 from .pkl_handler import PklHandler
+from .sqlite_handler import SqliteHandler
 
 try:
     from .xlsx_handler import XlsxHandler
@@ -11,6 +12,6 @@ except ImportError:
     _xlsx_available = False
 
 if _xlsx_available:
-    __all__ = ["DataHandler", "JsonHandler", "CsvHandler", "PklHandler", "XlsxHandler"]
+    __all__ = ["DataHandler", "JsonHandler", "CsvHandler", "PklHandler", "SqliteHandler", "XlsxHandler"]
 else:
-    __all__ = ["DataHandler", "JsonHandler", "CsvHandler", "PklHandler"]
+    __all__ = ["DataHandler", "JsonHandler", "CsvHandler", "PklHandler", "SqliteHandler"]
