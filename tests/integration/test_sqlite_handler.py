@@ -122,3 +122,39 @@ class TestSqliteHandlerFetchIntegration:
         )
         # Two rows match filter, but only 1 returned due to limit
         assert len(result) == 1
+
+
+class TestSqliteHandlerStoreIntegration:
+    """Integration tests for SqliteHandler.store() with real databases."""
+
+    def test_store_to_real_table(self, temp_db):
+        """Store data to an actual SQLite table (table must exist)."""
+        # Create table first
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+        conn.close()
+
+        test_data = [{"name": "Alice", "age": 30}]
+        handler = SqliteHandler()
+        result = handler.store(data=test_data, path=temp_db, table="users")
+        assert result == 1
+
+        # Verify data was stored
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, age FROM users")
+        rows = cursor.fetchall()
+        conn.close()
+        assert rows == [("Alice", 30)]
+
+    def test_store_raises_error_when_table_missing(self, temp_db):
+        """Store should raise error when table doesn't exist (user must create schema)."""
+        # Create empty database, no table
+        conn = sqlite3.connect(temp_db)
+        conn.close()
+
+        handler = SqliteHandler()
+        data = [{"name": "Alice", "age": 30}]
+
+        with pytest.raises(Exception):  # Table doesn't exist
+            handler.store(data=data, path=temp_db, table="users", strict=True)
