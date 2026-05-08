@@ -1,4 +1,4 @@
-# Type Coercion Design
+# Type Coercion and Post-Processing Refactoring Design
 
 **Date:** 2026-05-08
 **Author:** Brainstorming Session
@@ -6,7 +6,11 @@
 
 ## Overview
 
-Add automatic type coercion to the data access layer, allowing users to specify expected types for columns that will be applied during `fetch()` and `store()` operations. This eliminates the need for manual type casting and provides type guarantees at runtime.
+This design has two components:
+
+1. **Add automatic type coercion** to the data access layer, allowing users to specify expected types for columns that will be applied during `fetch()` and `store()` operations. This eliminates the need for manual type casting and provides type guarantees at runtime.
+
+2. **Refactor post-processing logic** by creating a `PostProcessingMixin` that consolidates duplicated code for column selection, filtering, limiting, and type coercion across all handlers. This reduces code duplication and ensures consistent behavior.
 
 ## Problem Statement
 
@@ -22,6 +26,7 @@ This is error-prone and inelegant. Type coercion should be handled transparently
 
 ## Requirements
 
+### Type Coercion (New Feature)
 1. Add type coercion to both `fetch()` and `store()` methods
 2. Define expected types via a per-call `types` parameter (e.g., `{'id': int, 'name': str}`)
 3. Support basic types: `int`, `float`, `str`, `bool`
@@ -29,15 +34,25 @@ This is error-prone and inelegant. Type coercion should be handled transparently
 5. Raise `TypeError` on coercion failure when `strict=True`
 6. Maintain backward compatibility (optional parameter, default behavior unchanged)
 
+### Post-Processing Refactoring (Code Quality)
+1. Create `PostProcessingMixin` to consolidate duplicated post-processing logic
+2. Move column selection, filtering, and limiting logic from individual handlers into the mixin
+3. Ensure consistent behavior across all handlers
+4. Reduce code duplication (~100-150 lines across 5 handlers)
+
 ## Architecture
 
-### TypeCoercionMixin
+### PostProcessingMixin
 
-A new mixin class providing centralized coercion logic:
+A new mixin class providing centralized post-processing logic for all handlers. This consolidates the duplicated logic for column selection, filtering, limiting, and type coercion:
 
 ```python
-class TypeCoercionMixin:
-    """Provides type coercion capabilities for data handlers."""
+class PostProcessingMixin:
+    """Provides post-processing capabilities for data handlers.
+
+    Centralizes logic for type coercion, column selection, filtering,
+    and limiting that was previously duplicated across all handlers.
+    """
 
     def _coerce_row(self, row: Dict[str, Any], types: Dict[str, Type]) -> Dict[str, Any]:
         """Coerce values in a row to their target types.
@@ -54,25 +69,49 @@ class TypeCoercionMixin:
         Handles None values by converting to defaults.
         Raises TypeError on conversion failure.
         """
+
+    def _select_columns(self, row: Dict[str, Any], cols: Set[str]) -> Dict[str, Any]:
+        """Select specified columns from a row."""
+
+    def _apply_processing(
+        self,
+        data: List[Dict[str, Any]],
+        types: Optional[Dict[str, Type]] = None,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Apply all post-processing steps in order.
+
+        Processing order:
+        1. Type coercion
+        2. Column selection
+        3. Filtering
+        4. Limiting
+        """
 ```
 
 ### Handler Integration
 
-All handlers inherit from both `TypeCoercionMixin` and `DataHandler`:
+All handlers inherit from both `PostProcessingMixin` and `DataHandler`:
 
 ```python
-class JsonHandler(TypeCoercionMixin, DataHandler):
+class JsonHandler(PostProcessingMixin, DataHandler):
     def fetch(self, ..., types: Optional[Dict[str, Type]] = None):
         # Load data
         data = self._load_from_file()
 
-        # Apply type coercion if types specified
-        if types is not None:
-            data = [self._coerce_row(row, types) for row in data]
+        # Apply all post-processing in one call
+        data = self._apply_processing(data, types, cols, filter_, limit)
 
-        # Continue with existing processing
-        ...
+        return data
 ```
+
+This eliminates code duplication across all handlers for:
+- Column selection (currently duplicated)
+- Filtering (currently duplicated)
+- Limiting (currently duplicated)
+- Type coercion (new feature)
 
 ## Coercion Rules
 
@@ -188,27 +227,35 @@ Type coercion is applied after loading data, before other processing steps:
 ## Implementation Structure
 
 ### New Files
-- `dal/type_coercion.py` - Contains `TypeCoercionMixin` class
+- `dal/post_processing.py` - Contains `PostProcessingMixin` class with:
+  - `_coerce_row()` - Type coercion for a single row
+  - `_coerce_value()` - Type coercion for a single value
+  - `_select_columns()` - Column selection logic
+  - `_apply_processing()` - Unified post-processing pipeline
 
 ### Modified Files
-- `dal/json_handler.py` - Inherit mixin, add `types` parameter
-- `dal/csv_handler.py` - Inherit mixin, add `types` parameter
-- `dal/pkl_handler.py` - Inherit mixin, add `types` parameter
-- `dal/xlsx_handler.py` - Inherit mixin, add `types` parameter
-- `dal/sqlite_handler.py` - Inherit mixin, add `types` parameter
+- `dal/json_handler.py` - Inherit `PostProcessingMixin`, add `types` parameter, simplify by using `_apply_processing()`
+- `dal/csv_handler.py` - Inherit `PostProcessingMixin`, add `types` parameter, simplify by using `_apply_processing()`
+- `dal/pkl_handler.py` - Inherit `PostProcessingMixin`, add `types` parameter, simplify by using `_apply_processing()`
+- `dal/xlsx_handler.py` - Inherit `PostProcessingMixin`, add `types` parameter, simplify by using `_apply_processing()`
+- `dal/sqlite_handler.py` - Inherit `PostProcessingMixin`, add `types` parameter, simplify by using `_apply_processing()`
 
 ### Directory Structure
 ```
 dal/
 ├── __init__.py
 ├── abc.py
-├── type_coercion.py  # NEW
-├── json_handler.py   # Modified
-├── csv_handler.py    # Modified
-├── pkl_handler.py    # Modified
-├── xlsx_handler.py   # Modified
-└── sqlite_handler.py # Modified
+├── post_processing.py  # NEW - PostProcessingMixin
+├── json_handler.py     # Modified - inherit mixin, add types, use _apply_processing
+├── csv_handler.py      # Modified - inherit mixin, add types, use _apply_processing
+├── pkl_handler.py      # Modified - inherit mixin, add types, use _apply_processing
+├── xlsx_handler.py     # Modified - inherit mixin, add types, use _apply_processing
+└── sqlite_handler.py   # Modified - inherit mixin, add types, use _apply_processing
 ```
+
+### Code Reduction Benefit
+
+Each handler currently has ~20-30 lines of duplicated code for cols/filter_/limit processing. By consolidating into `PostProcessingMixin`, we eliminate this duplication across all 5 handlers (~100-150 lines of duplicated code).
 
 ## Testing Strategy
 
