@@ -6,6 +6,7 @@ A unified Python data access layer providing a consistent interface for reading 
 
 - **Consistent API**: Single interface (`fetch` and `store` methods) for all file formats
 - **Data filtering**: Apply filters, column selection, and limits when reading/writing
+- **Type coercion**: Automatic type conversion for int, float, str, and bool types
 - **Error handling**: Configurable strict/lenient mode for error handling
 - **Type hints**: Full type annotation support
 - **Well-tested**: Comprehensive unit and integration tests
@@ -68,6 +69,7 @@ handler = JsonHandler(encoding='utf-8', indent=2)
 data = handler.fetch(
     path=Path("data"),
     table="users.json",
+    types={'age': int, 'active': bool},  # Optional: type coercion
     cols=["name", "age"],      # Optional: column selection
     filter_=lambda row: row["age"] > 25,  # Optional: filter rows
     limit=10,                   # Optional: limit rows
@@ -126,6 +128,45 @@ data = handler.fetch(
 )
 ```
 
+## Type Coercion
+
+All handlers support automatic type coercion via the `types` parameter:
+
+```python
+from pathlib import Path
+from dal import JsonHandler
+
+handler = JsonHandler()
+
+# Fetch with type coercion
+data = handler.fetch(
+    path=Path("data"),
+    table="users.json",
+    types={'id': int, 'age': int, 'active': bool}
+)
+
+# Type guarantees:
+for row in data:
+    user_id: int = row['id']      # Guaranteed to be int
+    age: int = row['age']          # Guaranteed to be int
+    active: bool = row['active']   # Guaranteed to be bool
+
+# Store with type coercion
+handler.store(
+    data=new_users,
+    path=Path("output"),
+    table="users.json",
+    types={'id': str, 'age': str}  # Convert to strings before storing
+)
+```
+
+**Supported types:** `int`, `float`, `str`, `bool`
+
+**Type coercion rules:**
+- `None` values convert to defaults (0, 0.0, "", False)
+- String conversions follow Python's built-in conversion rules
+- Bool strings are case-insensitive ("true", "false", "1", "0")
+
 ## API Reference
 
 ### DataHandler (Abstract Base Class)
@@ -143,6 +184,7 @@ def fetch(
     cols: Optional[Iterable[str]] = None,
     filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
     limit: Optional[int] = None,
+    types: Optional[Dict[str, type]] = None,
     strict: bool = True,
 ) -> List[Dict[str, Any]]:
     """Fetch data from file.
@@ -153,6 +195,7 @@ def fetch(
         cols: Columns to include (allowlist, None = all columns)
         filter_: Optional callable for row filtering
         limit: Maximum rows to return (applied after filtering)
+        types: Optional dict mapping column names to target types for coercion
         strict: If True, raise exceptions; if False, return empty list on error
 
     Returns:
@@ -172,6 +215,7 @@ def store(
     cols: Optional[Iterable[str]] = None,
     filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
     limit: Optional[int] = None,
+    types: Optional[Dict[str, type]] = None,
     overwrite: bool = True,
     strict: bool = True,
 ) -> int:
@@ -184,6 +228,7 @@ def store(
         cols: Columns to include (allowlist, None = all columns)
         filter_: Optional callable for row filtering
         limit: Maximum rows to store (applied after filtering)
+        types: Optional dict mapping column names to target types for coercion
         overwrite: If True, replace existing file; if False, append
         strict: If True, raise exceptions; if False, return 0 on error
 
@@ -196,18 +241,20 @@ def store(
 
 Operations are applied in the following order:
 
-1. **Column selection** (`cols`): Select specific columns
-2. **Filtering** (`filter_`): Apply filter function to rows
-3. **Limiting** (`limit`): Apply limit to filtered results
+1. **Type coercion** (`types`): Convert values to specified types
+2. **Column selection** (`cols`): Select specific columns
+3. **Filtering** (`filter_`): Apply filter function to rows
+4. **Limiting** (`limit`): Apply limit to filtered results
 
 ```python
 # Example: Get name and age for users over 25, limit to 10 results
 data = handler.fetch(
     path=Path("data"),
     table="users.json",
-    cols=["name", "age"],           # Step 1: Select columns
-    filter_=lambda row: row["age"] > 25,  # Step 2: Filter rows
-    limit=10                         # Step 3: Limit results
+    types={'age': int},             # Step 1: Coerce types
+    cols=["name", "age"],           # Step 2: Select columns
+    filter_=lambda row: row["age"] > 25,  # Step 3: Filter rows
+    limit=10                         # Step 4: Limit results
 )
 ```
 
