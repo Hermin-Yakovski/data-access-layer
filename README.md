@@ -17,11 +17,11 @@ A unified Python data access layer providing a consistent interface for reading 
 ### Using pip (from PyPI)
 
 ```bash
-# Basic installation (JSON, CSV, Pickle support)
+# Basic installation (JSON, CSV, Pickle, XLSX support)
 pip install data-access-layer
 
-# With Excel support
-pip install data-access-layer[xlsx]
+# With async support
+pip install data-access-layer[async]
 ```
 
 ### Using Poetry (for development)
@@ -54,6 +54,58 @@ csv_handler.store(data, path=Path("output"), table="users.csv")
 pkl_handler = PklHandler(protocol=4)
 data = pkl_handler.fetch(path=Path("data"), table="users.pkl")
 pkl_handler.store(data, path=Path("output"), table="users.pkl")
+```
+
+## Async Usage
+
+All handlers have async versions that can be used with `async/await`:
+
+```python
+import asyncio
+from pathlib import Path
+from dal import AsyncJsonHandler, AsyncCsvHandler, AsyncSqliteHandler
+
+async def main():
+    # Async JSON
+    json_handler = AsyncJsonHandler()
+    data = await json_handler.fetch(path=Path("data"), table="users.json")
+
+    # Async CSV
+    csv_handler = AsyncCsvHandler()
+    data = await csv_handler.fetch(path=Path("data"), table="users.csv")
+
+    # Async SQLite
+    sqlite_handler = AsyncSqliteHandler()
+    data = await sqlite_handler.fetch(path=Path("data"), table="users")
+
+asyncio.run(main())
+```
+
+**Available async handlers:**
+- `AsyncJsonHandler`
+- `AsyncCsvHandler`
+- `AsyncPklHandler`
+- `AsyncXlsxHandler`
+- `AsyncSqliteHandler`
+
+All async handlers support the same features as their sync counterparts:
+- Type coercion
+- Column selection
+- Filtering
+- Limiting
+- Lenient mode
+
+```python
+handler = AsyncJsonHandler()
+data = await handler.fetch(
+    path=Path("data"),
+    table="users.json",
+    types={'age': int, 'active': bool},  # Type coercion
+    cols=["name", "age"],      # Column selection
+    filter_=lambda row: row["age"] > 25,  # Filtering
+    limit=10,                   # Limiting
+    strict=False                # Lenient mode
+)
 ```
 
 ## Handlers
