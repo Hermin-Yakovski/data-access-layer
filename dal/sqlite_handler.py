@@ -1,11 +1,12 @@
 import sqlite3
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
 from .abc import DataHandler
+from .post_processing import PostProcessingMixin
 
 
-class SqliteHandler(DataHandler):
+class SqliteHandler(PostProcessingMixin, DataHandler):
     """Handler for SQLite databases.
 
     Supports fetching and storing data in SQLite tables.
@@ -19,6 +20,7 @@ class SqliteHandler(DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from SQLite table.
@@ -29,6 +31,7 @@ class SqliteHandler(DataHandler):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to return (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
             strict: If True, raise exceptions; if False, return empty list on error
 
         Returns:
@@ -59,18 +62,8 @@ class SqliteHandler(DataHandler):
             # Convert to list of dicts
             data = [dict(zip(columns, row)) for row in rows]
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data = [{k: v for k, v in row.items() if k in cols_set} for row in data]
-
-            # Apply filtering
-            if filter_ is not None:
-                data = [row for row in data if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data = data[:limit]
+            # Apply post-processing (types, cols, filter, limit)
+            data = self._apply_processing(data, types, cols, filter_, limit)
 
             return data
 
@@ -87,6 +80,7 @@ class SqliteHandler(DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -99,6 +93,7 @@ class SqliteHandler(DataHandler):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to store (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
             overwrite: If True, DELETE existing rows; if False, append
             strict: If True, raise exceptions; if False, return 0 on error
 
@@ -128,20 +123,8 @@ class SqliteHandler(DataHandler):
             # Prepare data to store
             data_to_store = data.copy()
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data_to_store = [
-                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
-                ]
-
-            # Apply filtering
-            if filter_ is not None:
-                data_to_store = [row for row in data_to_store if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data_to_store = data_to_store[:limit]
+            # Apply post-processing (types, cols, filter, limit)
+            data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
             # Clear table if overwrite mode
             if overwrite:
