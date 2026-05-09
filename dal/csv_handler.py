@@ -1,11 +1,12 @@
 import csv
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
 from .abc import DataHandler
+from .post_processing import PostProcessingMixin
 
 
-class CsvHandler(DataHandler):
+class CsvHandler(PostProcessingMixin, DataHandler):
     """Handler for CSV format files.
 
     Supports fetching and storing data in CSV format with optional
@@ -30,6 +31,7 @@ class CsvHandler(DataHandler):
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
         strict: bool = True,
+        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from CSV file.
 
@@ -40,6 +42,7 @@ class CsvHandler(DataHandler):
             filter_: Optional callable for row filtering
             limit: Maximum rows to return (applied after filtering)
             strict: If True, raise exceptions; if False, return empty list on error
+            types: Optional dict mapping field names to target types for coercion
 
         Returns:
             List of row dictionaries
@@ -56,18 +59,8 @@ class CsvHandler(DataHandler):
                 reader = csv.DictReader(f, delimiter=self.delimiter)
                 data = list(reader)
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data = [{k: v for k, v in row.items() if k in cols_set} for row in data]
-
-            # Apply filtering
-            if filter_ is not None:
-                data = [row for row in data if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data = data[:limit]
+            # Use unified post-processing
+            data = self._apply_processing(data, types, cols, filter_, limit)
 
             return data
 
@@ -86,6 +79,7 @@ class CsvHandler(DataHandler):
         limit: Optional[int] = None,
         overwrite: bool = True,
         strict: bool = True,
+        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to CSV file.
 
@@ -98,6 +92,7 @@ class CsvHandler(DataHandler):
             limit: Maximum rows to store (applied after filtering)
             overwrite: If True, replace existing file; if False, append
             strict: If True, raise exceptions; if False, return 0 on error
+            types: Optional dict mapping field names to target types for coercion
 
         Returns:
             Number of rows stored
@@ -111,20 +106,8 @@ class CsvHandler(DataHandler):
             # Prepare data to store
             data_to_store = data.copy()
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data_to_store = [
-                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
-                ]
-
-            # Apply filtering
-            if filter_ is not None:
-                data_to_store = [row for row in data_to_store if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data_to_store = data_to_store[:limit]
+            # Use unified post-processing
+            data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
             # Determine fieldnames from data
             if data_to_store:
