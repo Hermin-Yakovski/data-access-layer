@@ -28,3 +28,20 @@ async def test_async_csv_store_basic(tmp_path):
     result_file = tmp_path / "output.csv"
     content = result_file.read_text()
     assert "Charlie" in content
+
+@pytest.mark.asyncio
+async def test_async_csv_store_append(tmp_path):
+    """Test append mode."""
+    handler = AsyncCsvHandler()
+
+    # First write
+    await handler.store([{"name": "A", "age": "1"}], tmp_path, "append.csv")
+
+    # Append
+    await handler.store([{"name": "B", "age": "2"}], tmp_path, "append.csv", overwrite=False)
+
+    # Verify
+    result_file = tmp_path / "append.csv"
+    content = result_file.read_text()
+    assert "A" in content
+    assert "B" in content

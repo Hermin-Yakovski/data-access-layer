@@ -234,21 +234,35 @@ class AsyncCsvHandler(PostProcessingMixin, AsyncDataHandler):
             file_path = path / table
             data_to_store = data.copy()
 
+            # Use unified post-processing
             data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
-            if not data_to_store:
-                return 0
+            # Determine fieldnames from data
+            if data_to_store:
+                fieldnames = list(data_to_store[0].keys())
+            else:
+                fieldnames = []
 
-            fieldnames = list(data_to_store[0].keys())
+            # For append mode, read existing data and merge
+            if not overwrite and file_path.exists():
+                async with aiofiles.open(file_path, "r", encoding=self.encoding, newline="") as f:
+                    content = await f.read()
 
-            output = StringIO()
-            writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=self.delimiter)
-            writer.writeheader()
-            writer.writerows(data_to_store)
-            content = output.getvalue()
+                reader = csv.DictReader(StringIO(content), delimiter=self.delimiter)
+                existing_data = list(reader)
+                data_to_store = existing_data + data_to_store
 
-            async with aiofiles.open(file_path, "w", encoding=self.encoding, newline="") as f:
-                await f.write(content)
+            # Write to file
+            if data_to_store:
+                fieldnames = list(data_to_store[0].keys())
+                output = StringIO()
+                writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=self.delimiter)
+                writer.writeheader()
+                writer.writerows(data_to_store)
+                content = output.getvalue()
+
+                async with aiofiles.open(file_path, "w", encoding=self.encoding, newline="") as f:
+                    await f.write(content)
 
             return len(data_to_store)
         except Exception:
