@@ -58,3 +58,32 @@ class PostProcessingMixin:
                 raise TypeError(f"Unsupported target type: {target_type}")
         except (ValueError, TypeError) as e:
             raise TypeError(f"Cannot convert {type(value).__name__} value '{value}' to {target_type.__name__}") from e
+
+    def _coerce_row(self, row: Dict[str, Any], types: Dict[str, Type]) -> Dict[str, Any]:
+        """Coerce values in a row to their target types.
+
+        Behavior:
+        - Field in row AND types: coerce to target type
+        - Field in row NOT in types: keep original value
+        - Field in types NOT in row: skip silently
+
+        Args:
+            row: The row dictionary to process
+            types: Dictionary mapping field names to target types
+
+        Returns:
+            A new row dictionary with coerced values
+
+        Raises:
+            TypeError: If coercion fails for a field
+        """
+        result = {}
+        for field_name, value in row.items():
+            if field_name in types:
+                try:
+                    result[field_name] = self._coerce_value(value, types[field_name])
+                except TypeError as e:
+                    raise TypeError(f"Failed to coerce field '{field_name}': {e}") from e
+            else:
+                result[field_name] = value
+        return result

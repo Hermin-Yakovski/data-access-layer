@@ -100,3 +100,51 @@ class TestCoerceValueErrors:
         mixin = PostProcessingMixin()
         with pytest.raises(TypeError, match="Cannot convert int value '123' to list"):
             mixin._coerce_value(123, list)
+
+
+class TestCoerceRow:
+    def test_coerce_fields_in_both_row_and_types(self):
+        mixin = PostProcessingMixin()
+        row = {'id': '123', 'name': 'Alice', 'age': '30'}
+        types = {'id': int, 'age': int}
+        result = mixin._coerce_row(row, types)
+        assert result == {'id': 123, 'name': 'Alice', 'age': 30}
+        assert isinstance(result['id'], int)
+        assert isinstance(result['age'], int)
+
+    def test_keep_fields_not_in_types(self):
+        mixin = PostProcessingMixin()
+        row = {'id': '123', 'name': 'Alice'}
+        types = {'id': int}
+        result = mixin._coerce_row(row, types)
+        assert result == {'id': 123, 'name': 'Alice'}
+        assert result['name'] == 'Alice'  # unchanged
+
+    def test_skip_fields_in_types_not_in_row(self):
+        mixin = PostProcessingMixin()
+        row = {'id': '123'}
+        types = {'id': int, 'name': str}
+        result = mixin._coerce_row(row, types)
+        assert result == {'id': 123}
+        assert 'name' not in result
+
+    def test_empty_types_dict_returns_unchanged(self):
+        mixin = PostProcessingMixin()
+        row = {'id': '123', 'name': 'Alice'}
+        types = {}
+        result = mixin._coerce_row(row, types)
+        assert result == row
+
+    def test_empty_row_returns_empty_dict(self):
+        mixin = PostProcessingMixin()
+        row = {}
+        types = {'id': int}
+        result = mixin._coerce_row(row, types)
+        assert result == {}
+
+    def test_coercion_failure_raises_typeerror(self):
+        mixin = PostProcessingMixin()
+        row = {'age': 'not_a_number'}
+        types = {'age': int}
+        with pytest.raises(TypeError, match="Failed to coerce field 'age'"):
+            mixin._coerce_row(row, types)
