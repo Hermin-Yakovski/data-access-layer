@@ -1,11 +1,12 @@
 import pickle
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
 from .abc import DataHandler
+from .post_processing import PostProcessingMixin
 
 
-class PklHandler(DataHandler):
+class PklHandler(PostProcessingMixin, DataHandler):
     """Handler for Python pickle format files.
 
     Supports fetching and storing data in pickle format with optional
@@ -28,6 +29,7 @@ class PklHandler(DataHandler):
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
         strict: bool = True,
+        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from pickle file.
 
@@ -38,6 +40,7 @@ class PklHandler(DataHandler):
             filter_: Optional callable for row filtering
             limit: Maximum rows to return (applied after filtering)
             strict: If True, raise exceptions; if False, return empty list on error
+            types: Optional dict mapping field names to target types for coercion
 
         Returns:
             List of row dictionaries
@@ -65,18 +68,8 @@ class PklHandler(DataHandler):
                         f"Pickle file must contain a list of dictionaries, but item at index {i} is {type(row).__name__}"
                     )
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data = [{k: v for k, v in row.items() if k in cols_set} for row in data]
-
-            # Apply filtering
-            if filter_ is not None:
-                data = [row for row in data if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data = data[:limit]
+            # Use unified post-processing
+            data = self._apply_processing(data, types, cols, filter_, limit)
 
             return data
 
@@ -95,6 +88,7 @@ class PklHandler(DataHandler):
         limit: Optional[int] = None,
         overwrite: bool = True,
         strict: bool = True,
+        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to pickle file.
 
@@ -107,6 +101,7 @@ class PklHandler(DataHandler):
             limit: Maximum rows to store (applied after filtering)
             overwrite: If True, replace existing file; if False, append
             strict: If True, raise exceptions; if False, return 0 on error
+            types: Optional dict mapping field names to target types for coercion
 
         Returns:
             Number of rows stored
@@ -120,20 +115,8 @@ class PklHandler(DataHandler):
             # Prepare data to store
             data_to_store = data.copy()
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data_to_store = [
-                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
-                ]
-
-            # Apply filtering
-            if filter_ is not None:
-                data_to_store = [row for row in data_to_store if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data_to_store = data_to_store[:limit]
+            # Use unified post-processing
+            data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
             # For append mode, read existing data and merge
             if not overwrite and file_path.exists():
