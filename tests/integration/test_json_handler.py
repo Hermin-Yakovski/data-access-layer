@@ -218,3 +218,106 @@ class TestJsonHandlerStoreIntegration:
         handler = JsonHandler()
         with pytest.raises(ValueError, match="item at index 0 is list"):
             handler.fetch(path=temp_dir, table="invalid.json", strict=True)
+
+
+class TestJsonHandlerTypeCoercion:
+    """Integration tests for JsonHandler type coercion feature."""
+
+    def test_fetch_with_types_coerces_strings_to_int(self, temp_dir):
+        """Type coercion converts string fields to specified types."""
+        handler = JsonHandler()
+        handler.store(
+            [{'id': '1', 'name': 'Alice', 'age': '30'}],
+            path=temp_dir,
+            table='test_types.json'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types.json',
+            types={'id': int, 'age': int}
+        )
+
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['age'] == 30
+        assert isinstance(result[0]['age'], int)
+        assert result[0]['name'] == 'Alice'  # unchanged
+
+    def test_fetch_with_types_and_cols(self, temp_dir):
+        """Type coercion works with column selection."""
+        handler = JsonHandler()
+        handler.store(
+            [{'id': '1', 'name': 'Alice', 'age': '30', 'active': 'true'}],
+            path=temp_dir,
+            table='test_types_cols.json'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types_cols.json',
+            types={'id': int, 'age': int, 'active': bool},
+            cols=['id', 'age', 'active']
+        )
+
+        assert result == [{'id': 1, 'age': 30, 'active': True}]
+        assert isinstance(result[0]['active'], bool)
+
+    def test_fetch_with_types_and_filter(self, temp_dir):
+        """Type coercion happens before filter is applied."""
+        handler = JsonHandler()
+        handler.store(
+            [
+                {'id': '1', 'age': '30'},
+                {'id': '2', 'age': '25'},
+                {'id': '3', 'age': '35'}
+            ],
+            path=temp_dir,
+            table='test_types_filter.json'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types_filter.json',
+            types={'age': int},
+            filter_=lambda r: r['age'] > 28
+        )
+
+        assert len(result) == 2
+        assert result[0]['id'] == '1'
+        assert result[0]['age'] == 30
+        assert isinstance(result[0]['age'], int)
+
+    def test_fetch_with_types_coercion_failure_raises_typeerror(self, temp_dir):
+        """Type coercion failure raises descriptive TypeError."""
+        handler = JsonHandler()
+        handler.store(
+            [{'id': '1', 'age': 'not_a_number'}],
+            path=temp_dir,
+            table='test_types_error.json'
+        )
+
+        with pytest.raises(TypeError, match="Failed to coerce field 'age'"):
+            handler.fetch(
+                path=temp_dir,
+                table='test_types_error.json',
+                types={'age': int}
+            )
+
+    def test_store_with_types_coerces_before_writing(self, temp_dir):
+        """Store coerces types before writing to file."""
+        handler = JsonHandler()
+        handler.store(
+            [{'id': 1, 'name': 'Alice', 'age': 30}],  # ints
+            path=temp_dir,
+            table='test_store_types.json',
+            types={'id': str, 'name': str, 'age': str}  # coerce to strings
+        )
+
+        # Read back without coercion to verify stored as strings
+        result = handler.fetch(path=temp_dir, table='test_store_types.json')
+
+        assert result[0]['id'] == '1'
+        assert isinstance(result[0]['id'], str)
+        assert result[0]['age'] == '30'
+        assert isinstance(result[0]['age'], str)
