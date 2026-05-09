@@ -5,13 +5,13 @@ from .pkl_handler import AsyncPklHandler, PklHandler
 from .sqlite_handler import SqliteHandler
 
 try:
-    from .xlsx_handler import XlsxHandler
+    from .xlsx_handler import XlsxHandler, AsyncXlsxHandler
 
     _xlsx_available = True
 except ImportError:
     _xlsx_available = False
 
 if _xlsx_available:
-    __all__ = ["DataHandler", "AsyncDataHandler", "JsonHandler", "AsyncJsonHandler", "CsvHandler", "AsyncCsvHandler", "PklHandler", "AsyncPklHandler", "SqliteHandler", "XlsxHandler"]
+    __all__ = ["DataHandler", "AsyncDataHandler", "JsonHandler", "AsyncJsonHandler", "CsvHandler", "AsyncCsvHandler", "PklHandler", "AsyncPklHandler", "SqliteHandler", "XlsxHandler", "AsyncXlsxHandler"]
 else:
     __all__ = ["DataHandler", "AsyncDataHandler", "JsonHandler", "AsyncJsonHandler", "CsvHandler", "AsyncCsvHandler", "PklHandler", "AsyncPklHandler", "SqliteHandler"]
