@@ -179,3 +179,63 @@ class TestSelectColumns:
         result = mixin._select_columns(row, cols)
         assert result == {'id': 1, 'name': 'Alice'}
         assert 'age' not in result
+
+
+class TestApplyProcessing:
+    def test_apply_processing_only_types(self):
+        mixin = PostProcessingMixin()
+        data = [{'id': '1', 'name': 'Alice'}, {'id': '2', 'name': 'Bob'}]
+        result = mixin._apply_processing(data, types={'id': int})
+        assert result == [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]
+        assert all(isinstance(r['id'], int) for r in result)
+
+    def test_apply_processing_only_cols(self):
+        mixin = PostProcessingMixin()
+        data = [{'id': 1, 'name': 'Alice', 'age': 30}, {'id': 2, 'name': 'Bob', 'age': 25}]
+        result = mixin._apply_processing(data, cols=['id', 'name'])
+        assert result == [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]
+
+    def test_apply_processing_only_filter(self):
+        mixin = PostProcessingMixin()
+        data = [{'id': 1, 'active': True}, {'id': 2, 'active': False}, {'id': 3, 'active': True}]
+        result = mixin._apply_processing(data, filter_=lambda r: r['active'])
+        assert result == [{'id': 1, 'active': True}, {'id': 3, 'active': True}]
+
+    def test_apply_processing_only_limit(self):
+        mixin = PostProcessingMixin()
+        data = [{'id': 1}, {'id': 2}, {'id': 3}, {'id': 4}, {'id': 5}]
+        result = mixin._apply_processing(data, limit=3)
+        assert len(result) == 3
+        assert result == [{'id': 1}, {'id': 2}, {'id': 3}]
+
+    def test_apply_processing_order(self):
+        """Verify processing order: types -> cols -> filter -> limit"""
+        mixin = PostProcessingMixin()
+        data = [
+            {'id': '1', 'name': 'Alice', 'age': '30', 'active': 'true'},
+            {'id': '2', 'name': 'Bob', 'age': '25', 'active': 'false'},
+            {'id': '3', 'name': 'Charlie', 'age': '35', 'active': 'true'},
+        ]
+        result = mixin._apply_processing(
+            data,
+            types={'id': int, 'age': int, 'active': bool},
+            cols=['id', 'age', 'active'],
+            filter_=lambda r: r['active'],
+            limit=1
+        )
+        assert result == [{'id': 1, 'age': 30, 'active': True}]
+        assert isinstance(result[0]['id'], int)
+        assert isinstance(result[0]['age'], int)
+        assert isinstance(result[0]['active'], bool)
+
+    def test_apply_processing_none_params_returns_unchanged(self):
+        mixin = PostProcessingMixin()
+        data = [{'id': 1, 'name': 'Alice'}]
+        result = mixin._apply_processing(data)
+        assert result == data
+
+    def test_apply_processing_empty_data(self):
+        mixin = PostProcessingMixin()
+        data = []
+        result = mixin._apply_processing(data, types={'id': int}, cols=['id'])
+        assert result == []

@@ -99,3 +99,50 @@ class PostProcessingMixin:
             A new dictionary with only the specified columns
         """
         return {k: v for k, v in row.items() if k in cols}
+
+    def _apply_processing(
+        self,
+        data: List[Dict[str, Any]],
+        types: Optional[Dict[str, Type]] = None,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Apply all post-processing steps in order.
+
+        Processing order:
+        1. Type coercion
+        2. Column selection
+        3. Filtering
+        4. Limiting
+
+        Args:
+            data: List of row dictionaries
+            types: Optional dict mapping field names to target types
+            cols: Optional iterable of column names to select
+            filter_: Optional callable for row filtering
+            limit: Optional maximum number of rows to return
+
+        Returns:
+            Processed list of row dictionaries
+        """
+        result = data
+
+        # Step 1: Type coercion
+        if types is not None:
+            result = [self._coerce_row(row, types) for row in result]
+
+        # Step 2: Column selection
+        if cols is not None:
+            cols_set = set(cols)
+            result = [self._select_columns(row, cols_set) for row in result]
+
+        # Step 3: Filtering
+        if filter_ is not None:
+            result = [row for row in result if filter_(row)]
+
+        # Step 4: Limiting
+        if limit is not None:
+            result = result[:limit]
+
+        return result
