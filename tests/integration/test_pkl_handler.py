@@ -177,3 +177,27 @@ class TestPklHandlerStoreIntegration:
         handler = PklHandler()
         with pytest.raises(ValueError, match="item at index 0 is list"):
             handler.fetch(path=temp_dir, table="invalid.pkl", strict=True)
+
+
+class TestPklHandlerTypeCoercion:
+    """Integration tests for PklHandler type coercion with real files."""
+
+    def test_fetch_with_types_coerces_values(self, temp_dir):
+        """Fetch with types parameter coerces string values to specified types."""
+        handler = PklHandler()
+        handler.store(
+            [{'id': '1', 'name': 'Alice', 'active': 'true'}],
+            path=temp_dir,
+            table='test_types.pkl'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types.pkl',
+            types={'id': int, 'active': bool}
+        )
+
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['active'] is True
+        assert isinstance(result[0]['active'], bool)
