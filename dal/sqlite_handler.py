@@ -2,7 +2,9 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
-from .abc import DataHandler
+import aiosqlite
+
+from .abc import AsyncDataHandler, DataHandler
 from .post_processing import PostProcessingMixin
 
 
@@ -147,6 +149,149 @@ class SqliteHandler(PostProcessingMixin, DataHandler):
 
             conn.commit()
             conn.close()
+
+            return len(data_to_store)
+
+        except Exception:
+            if strict:
+                raise
+            return 0
+
+
+class AsyncSqliteHandler(PostProcessingMixin, AsyncDataHandler):
+    """Async handler for SQLite databases using aiosqlite."""
+
+    async def fetch(
+        self,
+        path: Path,
+        table: str,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
+        strict: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Fetch data from SQLite table asynchronously.
+
+        Args:
+            path: Path to the SQLite database file
+            table: Table name to fetch from
+            cols: Columns to include (allowlist, None = all columns)
+            filter_: Optional callable for row filtering
+            limit: Maximum rows to return (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
+            strict: If True, raise exceptions; if False, return empty list on error
+
+        Returns:
+            List of row dictionaries
+        """
+        try:
+            if not path.exists():
+                raise FileNotFoundError(f"Database file '{path}' does not exist")
+
+            async with aiosqlite.connect(path) as conn:
+                cursor = await conn.cursor()
+
+                # Check if table exists
+                await cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,)
+                )
+                if await cursor.fetchone() is None:
+                    raise Exception(f"Table '{table}' does not exist in database '{path}'")
+
+                # Fetch all data
+                await cursor.execute(f"SELECT * FROM {table}")
+                rows = await cursor.fetchall()
+                columns = [description[0] for description in cursor.description]
+
+            # Convert to list of dicts
+            data = [dict(zip(columns, row)) for row in rows]
+
+            # Apply post-processing (types, cols, filter, limit)
+            data = self._apply_processing(data, types, cols, filter_, limit)
+
+            return data
+
+        except Exception:
+            if strict:
+                raise
+            return []
+
+    async def store(
+        self,
+        data: List[Dict[str, Any]],
+        path: Path,
+        table: str,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
+        overwrite: bool = True,
+        strict: bool = True,
+    ) -> int:
+        """Store data to SQLite table asynchronously.
+
+        Args:
+            data: List of row dictionaries to store
+            path: Path to the SQLite database file
+            table: Table name to store to (must exist)
+            cols: Columns to include (allowlist, None = all columns)
+            filter_: Optional callable for row filtering
+            limit: Maximum rows to store (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
+            overwrite: If True, DELETE existing rows; if False, append
+            strict: If True, raise exceptions; if False, return 0 on error
+
+        Returns:
+            Number of rows stored
+        """
+        try:
+            if not path.exists():
+                raise FileNotFoundError(f"Database file '{path}' does not exist")
+
+            async with aiosqlite.connect(path) as conn:
+                cursor = await conn.cursor()
+
+                # Check if table exists
+                await cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,)
+                )
+                if await cursor.fetchone() is None:
+                    raise Exception(f"Table '{table}' does not exist in database '{path}'")
+
+                # Get table columns
+                await cursor.execute(f"PRAGMA table_info({table})")
+                table_columns_rows = await cursor.fetchall()
+                table_columns = {row[1] for row in table_columns_rows}
+
+                # Prepare data to store
+                data_to_store = data.copy()
+
+                # Apply post-processing (types, cols, filter, limit)
+                data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
+
+                # Clear table if overwrite mode
+                if overwrite:
+                    await cursor.execute(f"DELETE FROM {table}")
+
+                # Insert data
+                if data_to_store:
+                    # Only insert columns that exist in table
+                    for row in data_to_store:
+                        columns_to_insert = [k for k in row.keys() if k in table_columns]
+                        if not columns_to_insert:
+                            continue
+                        placeholders = ", ".join(["?"] * len(columns_to_insert))
+                        columns_str = ", ".join(columns_to_insert)
+                        values = [row.get(col) for col in columns_to_insert]
+                        await cursor.execute(
+                            f"INSERT INTO {table} ({columns_str}) VALUES ({placeholders})",
+                            values
+                        )
+
+                await conn.commit()
 
             return len(data_to_store)
 
