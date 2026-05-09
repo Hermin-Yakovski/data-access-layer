@@ -148,3 +148,34 @@ class TestCoerceRow:
         types = {'age': int}
         with pytest.raises(TypeError, match="Failed to coerce field 'age'"):
             mixin._coerce_row(row, types)
+
+
+class TestSelectColumns:
+    def test_select_columns_from_row(self):
+        mixin = PostProcessingMixin()
+        row = {'id': 1, 'name': 'Alice', 'age': 30, 'city': 'NYC'}
+        cols = {'id', 'name'}
+        result = mixin._select_columns(row, cols)
+        assert result == {'id': 1, 'name': 'Alice'}
+
+    def test_select_columns_empty_set(self):
+        mixin = PostProcessingMixin()
+        row = {'id': 1, 'name': 'Alice'}
+        cols = set()
+        result = mixin._select_columns(row, cols)
+        assert result == {}
+
+    def test_select_columns_all_present(self):
+        mixin = PostProcessingMixin()
+        row = {'id': 1, 'name': 'Alice'}
+        cols = {'id', 'name'}
+        result = mixin._select_columns(row, cols)
+        assert result == row
+
+    def test_select_columns_some_missing(self):
+        mixin = PostProcessingMixin()
+        row = {'id': 1, 'name': 'Alice'}
+        cols = {'id', 'name', 'age'}
+        result = mixin._select_columns(row, cols)
+        assert result == {'id': 1, 'name': 'Alice'}
+        assert 'age' not in result

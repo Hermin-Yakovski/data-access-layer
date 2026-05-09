@@ -87,3 +87,15 @@ class PostProcessingMixin:
             else:
                 result[field_name] = value
         return result
+
+    def _select_columns(self, row: Dict[str, Any], cols: Set[str]) -> Dict[str, Any]:
+        """Select specified columns from a row.
+
+        Args:
+            row: The row dictionary
+            cols: Set of column names to select
+
+        Returns:
+            A new dictionary with only the specified columns
+        """
+        return {k: v for k, v in row.items() if k in cols}
