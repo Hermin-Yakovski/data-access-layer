@@ -138,3 +138,102 @@ class TestCsvHandlerStoreIntegration:
         content = test_file.read_text()
         assert "Alice,30" in content
         assert "Bob,25" not in content
+
+
+class TestCsvHandlerTypeCoercion:
+    """Integration tests for CsvHandler type coercion functionality."""
+
+    def test_fetch_with_types_coerces_csv_strings(self, temp_dir):
+        """Type coercion converts CSV string values to specified types."""
+        handler = CsvHandler()
+        handler.store(
+            [{'id': '1', 'name': 'Alice', 'age': '30'}],
+            path=temp_dir,
+            table='test_types.csv'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types.csv',
+            types={'id': int, 'age': int}
+        )
+
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['age'] == 30
+        assert isinstance(result[0]['age'], int)
+        # name should remain a string
+        assert result[0]['name'] == 'Alice'
+        assert isinstance(result[0]['name'], str)
+
+    def test_fetch_with_types_and_filter(self, temp_dir):
+        """Type coercion works correctly with filter parameter."""
+        handler = CsvHandler()
+        handler.store(
+            [{'id': '1', 'age': '30'}, {'id': '2', 'age': '25'}, {'id': '3', 'age': '35'}],
+            path=temp_dir,
+            table='test_types_filter.csv'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types_filter.csv',
+            types={'age': int},
+            filter_=lambda r: r['age'] > 28
+        )
+
+        assert len(result) == 2
+        assert result[0]['age'] == 30
+        assert result[1]['age'] == 35
+        # Verify coercion happened
+        assert all(isinstance(r['age'], int) for r in result)
+
+    def test_fetch_with_types_and_limit(self, temp_dir):
+        """Type coercion works correctly with limit parameter."""
+        handler = CsvHandler()
+        handler.store(
+            [{'id': '1', 'score': '95'}, {'id': '2', 'score': '87'}, {'id': '3', 'score': '92'}],
+            path=temp_dir,
+            table='test_types_limit.csv'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_types_limit.csv',
+            types={'id': int, 'score': int},
+            limit=2
+        )
+
+        assert len(result) == 2
+        assert result[0]['id'] == 1
+        assert result[0]['score'] == 95
+        assert result[1]['id'] == 2
+        assert result[1]['score'] == 87
+        # Verify coercion happened
+        assert all(isinstance(r['id'], int) and isinstance(r['score'], int) for r in result)
+
+    def test_fetch_with_types_partial_coercion(self, temp_dir):
+        """Type coercion only converts specified columns, leaving others as strings."""
+        handler = CsvHandler()
+        handler.store(
+            [{'id': '1', 'name': 'Alice', 'age': '30', 'active': 'true'}],
+            path=temp_dir,
+            table='test_partial.csv'
+        )
+
+        result = handler.fetch(
+            path=temp_dir,
+            table='test_partial.csv',
+            types={'id': int, 'age': int}
+        )
+
+        # Specified columns are coerced
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['age'], int)
+        assert result[0]['age'] == 30
+        # Unspecified columns remain strings
+        assert isinstance(result[0]['name'], str)
+        assert result[0]['name'] == 'Alice'
+        assert isinstance(result[0]['active'], str)
+        assert result[0]['active'] == 'true'
