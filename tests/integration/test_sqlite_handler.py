@@ -327,3 +327,186 @@ class TestSqliteHandlerStoreIntegration:
         count = cursor.fetchone()[0]
         conn.close()
         assert count == 1
+
+
+class TestSqliteHandlerTypeCoercion:
+    """Integration tests for type coercion in SqliteHandler."""
+
+    def test_fetch_with_types_coerces_values(self, temp_db):
+        """fetch() with types parameter coerces string values to target types."""
+        # Create table and store string data
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE test_types (id TEXT, name TEXT, active TEXT)")
+        conn.execute("INSERT INTO test_types VALUES ('1', 'Alice', 'true')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.fetch(
+            path=temp_db,
+            table='test_types',
+            types={'id': int, 'active': bool}
+        )
+
+        assert len(result) == 1
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['active'] is True
+        assert isinstance(result[0]['active'], bool)
+        assert result[0]['name'] == 'Alice'  # name not in types, stays as string
+
+    def test_fetch_with_types_coerces_multiple_rows(self, temp_db):
+        """Type coercion works correctly across multiple rows."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id TEXT, name TEXT, age TEXT, active TEXT)")
+        conn.execute("INSERT INTO users VALUES ('1', 'Alice', '30', 'true')")
+        conn.execute("INSERT INTO users VALUES ('2', 'Bob', '25', 'false')")
+        conn.execute("INSERT INTO users VALUES ('3', 'Charlie', '35', '1')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.fetch(
+            path=temp_db,
+            table='users',
+            types={'id': int, 'age': int, 'active': bool}
+        )
+
+        assert len(result) == 3
+        assert result[0] == {'id': 1, 'name': 'Alice', 'age': 30, 'active': True}
+        assert result[1] == {'id': 2, 'name': 'Bob', 'age': 25, 'active': False}
+        assert result[2] == {'id': 3, 'name': 'Charlie', 'age': 35, 'active': True}
+
+    def test_store_with_types_coerces_values(self, temp_db):
+        """store() with types parameter coerces values before storing."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE test_types (id INTEGER, name TEXT, active INTEGER)")
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.store(
+            [{'id': '1', 'name': 'Alice', 'active': 'true'}],
+            path=temp_db,
+            table='test_types',
+            types={'id': int, 'active': bool}
+        )
+
+        assert result == 1
+
+        # Verify data was stored with coerced types
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, active FROM test_types")
+        row = cursor.fetchone()
+        conn.close()
+
+        assert row == (1, 'Alice', 1)  # bool true stored as integer 1
+
+    def test_store_with_types_handles_none_values(self, temp_db):
+        """Type coercion handles None values with default values."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id INTEGER, name TEXT, age INTEGER, active INTEGER)")
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.store(
+            [{'id': None, 'name': 'Alice', 'age': None, 'active': None}],
+            path=temp_db,
+            table='users',
+            types={'id': int, 'age': int, 'active': bool}
+        )
+
+        assert result == 1
+
+        # Verify None values were coerced to defaults
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, age, active FROM users")
+        row = cursor.fetchone()
+        conn.close()
+
+        assert row == (0, 'Alice', 0, 0)  # None -> 0 for int, False for bool
+
+    def test_fetch_with_types_float_coercion(self, temp_db):
+        """Type coercion works for float types."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE products (id TEXT, name TEXT, price TEXT)")
+        conn.execute("INSERT INTO products VALUES ('1', 'Widget', '19.99')")
+        conn.execute("INSERT INTO products VALUES ('2', 'Gadget', '29.50')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.fetch(
+            path=temp_db,
+            table='products',
+            types={'id': int, 'price': float}
+        )
+
+        assert len(result) == 2
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['price'] == 19.99
+        assert isinstance(result[0]['price'], float)
+        assert result[1]['price'] == 29.50
+
+    def test_fetch_with_types_bool_string_variations(self, temp_db):
+        """Boolean coercion handles various string representations."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE bool_test (id INTEGER, value TEXT)")
+        conn.execute("INSERT INTO bool_test VALUES (1, 'true')")
+        conn.execute("INSERT INTO bool_test VALUES (2, 'false')")
+        conn.execute("INSERT INTO bool_test VALUES (3, '1')")
+        conn.execute("INSERT INTO bool_test VALUES (4, '0')")
+        conn.execute("INSERT INTO bool_test VALUES (5, 'yes')")
+        conn.execute("INSERT INTO bool_test VALUES (6, 'no')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        result = handler.fetch(
+            path=temp_db,
+            table='bool_test',
+            types={'value': bool}
+        )
+
+        assert len(result) == 6
+        assert result[0]['value'] is True
+        assert result[1]['value'] is False
+        assert result[2]['value'] is True
+        assert result[3]['value'] is False
+        assert result[4]['value'] is True
+        assert result[5]['value'] is False
+
+    def test_fetch_with_types_invalid_bool_raises_error(self, temp_db):
+        """Invalid bool string raises TypeError."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE bool_test (id INTEGER, value TEXT)")
+        conn.execute("INSERT INTO bool_test VALUES (1, 'invalid')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        with pytest.raises(TypeError, match="Failed to coerce field 'value'"):
+            handler.fetch(
+                path=temp_db,
+                table='bool_test',
+                types={'value': bool}
+            )
+
+    def test_fetch_with_types_no_partial_coercion(self, temp_db):
+        """When type coercion fails, no rows are returned (transactional behavior)."""
+        conn = sqlite3.connect(temp_db)
+        conn.execute("CREATE TABLE users (id TEXT, name TEXT, age TEXT)")
+        conn.execute("INSERT INTO users VALUES ('1', 'Alice', '30')")
+        conn.execute("INSERT INTO users VALUES ('2', 'Bob', 'not_a_number')")
+        conn.commit()
+        conn.close()
+
+        handler = SqliteHandler()
+        with pytest.raises(TypeError):
+            handler.fetch(
+                path=temp_db,
+                table='users',
+                types={'age': int}
+            )
