@@ -356,3 +356,148 @@ class TestXlsxHandlerStoreIntegration:
 
         with pytest.raises(FileNotFoundError, match="does not exist"):
             handler.store(path=nonexistent_file, table="Users", data=data)
+
+
+@pytest.mark.skipif(not HAS_OPENPYXL, reason="openpyxl not installed")
+class TestXlsxHandlerTypeCoercion:
+    """Integration tests for XlsxHandler type coercion functionality."""
+
+    def test_fetch_with_types_coerces_values(self, temp_dir):
+        """Type coercion in fetch() converts string values to specified types."""
+        from openpyxl import Workbook
+
+        # Create test data with string values that should be coerced
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["id", "name", "age"])
+        ws.append(["1", "Alice", "30"])
+        ws.append(["2", "Bob", "25"])
+
+        test_file = temp_dir / "test_types.xlsx"
+        wb.save(test_file)
+
+        # Fetch with type coercion
+        handler = XlsxHandler()
+        result = handler.fetch(
+            path=test_file,
+            table="Sheet",
+            types={'id': int, 'age': int}
+        )
+
+        # Verify values were coerced to correct types
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+        assert result[0]['age'] == 30
+        assert isinstance(result[0]['age'], int)
+        assert result[0]['name'] == "Alice"
+        assert isinstance(result[0]['name'], str)
+
+        assert result[1]['id'] == 2
+        assert isinstance(result[1]['id'], int)
+        assert result[1]['age'] == 25
+        assert isinstance(result[1]['age'], int)
+
+    def test_fetch_with_partial_type_coercion(self, temp_dir):
+        """Type coercion only applies to specified columns."""
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.append(["id", "name", "age", "score"])
+        ws.append(["1", "Alice", "30", "95.5"])
+
+        test_file = temp_dir / "partial_types.xlsx"
+        wb.save(test_file)
+
+        handler = XlsxHandler()
+        result = handler.fetch(
+            path=test_file,
+            table="Sheet",
+            types={'id': int}  # Only coerce id
+        )
+
+        # id should be coerced
+        assert result[0]['id'] == 1
+        assert isinstance(result[0]['id'], int)
+
+        # Other columns remain as-is
+        assert result[0]['name'] == "Alice"
+        assert result[0]['age'] == "30"
+        assert result[0]['score'] == "95.5"
+
+    def test_store_with_types_coerces_values(self, temp_dir):
+        """Type coercion in store() converts values before writing."""
+        from openpyxl import load_workbook
+
+        test_data = [
+            {'id': '1', 'name': 'Alice', 'age': '30'},
+            {'id': '2', 'name': 'Bob', 'age': '25'}
+        ]
+
+        handler = XlsxHandler()
+        test_file = temp_dir / "store_types.xlsx"
+
+        # Store with type coercion
+        handler.store(
+            data=test_data,
+            path=test_file,
+            table="Sheet",
+            types={'id': int, 'age': int}
+        )
+
+        # Verify values were coerced and stored correctly
+        wb = load_workbook(test_file)
+        ws = wb.active
+
+        # Check header
+        assert ws["A1"].value == "id"
+        assert ws["B1"].value == "name"
+        assert ws["C1"].value == "age"
+
+        # Check first data row - values should be coerced types
+        assert ws["A2"].value == 1
+        assert isinstance(ws["A2"].value, int)
+        assert ws["B2"].value == "Alice"
+        assert ws["C2"].value == 30
+        assert isinstance(ws["C2"].value, int)
+
+        # Check second data row
+        assert ws["A3"].value == 2
+        assert isinstance(ws["A3"].value, int)
+        assert ws["B3"].value == "Bob"
+        assert ws["C3"].value == 25
+        assert isinstance(ws["C3"].value, int)
+
+    def test_store_and_fetch_with_types_roundtrip(self, temp_dir):
+        """Store and fetch with type coercion maintains data integrity."""
+        test_data = [
+            {'id': '1', 'name': 'Alice', 'score': '100'},
+            {'id': '2', 'name': 'Bob', 'score': '95'}
+        ]
+
+        handler = XlsxHandler()
+        test_file = temp_dir / "roundtrip.xlsx"
+
+        # Store with type coercion
+        handler.store(
+            data=test_data,
+            path=test_file,
+            table="Data",
+            types={'id': int, 'score': int}
+        )
+
+        # Fetch with same type coercion
+        result = handler.fetch(
+            path=test_file,
+            table="Data",
+            types={'id': int, 'score': int}
+        )
+
+        # Verify data integrity
+        assert len(result) == 2
+        assert result[0] == {'id': 1, 'name': 'Alice', 'score': 100}
+        assert result[1] == {'id': 2, 'name': 'Bob', 'score': 95}
+
+        # Verify types
+        assert isinstance(result[0]['id'], int)
+        assert isinstance(result[0]['score'], int)
