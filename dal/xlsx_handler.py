@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
 try:
     from openpyxl import Workbook, load_workbook
@@ -9,9 +9,10 @@ except ImportError:
     HAS_OPENPYXL = False
 
 from .abc import DataHandler
+from .post_processing import PostProcessingMixin
 
 
-class XlsxHandler(DataHandler):
+class XlsxHandler(PostProcessingMixin, DataHandler):
     """Handler for Excel XLSX format files.
 
     Supports fetching and storing data in XLSX format with optional
@@ -42,6 +43,7 @@ class XlsxHandler(DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from XLSX file.
@@ -52,6 +54,7 @@ class XlsxHandler(DataHandler):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to return (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
             strict: If True, raise exceptions; if False, return empty list on error
 
         Returns:
@@ -91,18 +94,8 @@ class XlsxHandler(DataHandler):
             finally:
                 wb.close()
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data = [{k: v for k, v in row.items() if k in cols_set} for row in data]
-
-            # Apply filtering
-            if filter_ is not None:
-                data = [row for row in data if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data = data[:limit]
+            # Apply post-processing
+            data = self._apply_processing(data, types, cols, filter_, limit)
 
             return data
 
@@ -119,6 +112,7 @@ class XlsxHandler(DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -131,6 +125,7 @@ class XlsxHandler(DataHandler):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable for row filtering
             limit: Maximum rows to store (applied after filtering)
+            types: Optional dict mapping field names to target types for coercion
             overwrite: If True, replace existing sheet content; if False, append
             strict: If True, raise exceptions; if False, return 0 on error
 
@@ -145,20 +140,8 @@ class XlsxHandler(DataHandler):
             # Prepare data to store
             data_to_store = data.copy()
 
-            # Apply column selection
-            if cols is not None:
-                cols_set = set(cols)
-                data_to_store = [
-                    {k: v for k, v in row.items() if k in cols_set} for row in data_to_store
-                ]
-
-            # Apply filtering
-            if filter_ is not None:
-                data_to_store = [row for row in data_to_store if filter_(row)]
-
-            # Apply limit (after filtering)
-            if limit is not None:
-                data_to_store = data_to_store[:limit]
+            # Apply post-processing
+            data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
             # Handle workbook creation or loading
             if path.exists():
