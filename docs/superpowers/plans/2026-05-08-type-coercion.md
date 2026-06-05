@@ -45,7 +45,7 @@ Create test file: `tests/unit/test_post_processing.py`
 
 ```python
 import pytest
-from dal.post_processing import PostProcessingMixin
+from data_access_layer.post_processing import PostProcessingMixin
 
 
 class TestCoerceValue:

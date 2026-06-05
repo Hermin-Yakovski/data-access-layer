@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from dal.pkl_handler import AsyncPklHandler
+from data_access_layer.pkl_handler import AsyncPklHandler
 
 
 @pytest.mark.asyncio

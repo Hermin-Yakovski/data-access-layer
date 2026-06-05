@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from dal.json_handler import AsyncJsonHandler
+from data_access_layer.json_handler import AsyncJsonHandler
 
 @pytest.mark.asyncio
 async def test_async_json_fetch_basic(tmp_path):

@@ -214,7 +214,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 import pytest
 
-from dal.json_handler import JsonHandler
+from data_access_layer.json_handler import JsonHandler
 
 
 class TestJsonHandlerFetch:
@@ -777,7 +777,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 import pytest
 
-from dal.csv_handler import CsvHandler
+from data_access_layer.csv_handler import CsvHandler
 
 
 class TestCsvHandlerFetch:
@@ -1244,7 +1244,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 import pytest
 
-from dal.pkl_handler import PklHandler
+from data_access_layer.pkl_handler import PklHandler
 
 
 class TestPklHandlerFetch:
@@ -1690,7 +1690,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 import pytest
 
-from dal.xlsx_handler import XlsxHandler
+from data_access_layer.xlsx_handler import XlsxHandler
 
 
 class TestXlsxHandlerFetch:
@@ -1716,7 +1716,7 @@ class TestXlsxHandlerFetch:
                 strict=True
             )
 
-    @patch('dal.xlsx_handler.load_workbook')
+    @patch('data_access_layer.xlsx_handler.load_workbook')
     @patch('pathlib.Path.exists', return_value=True)
     def test_fetch_all_data(self, mock_exists, mock_load):
         """Fetch returns all data when no filters specified."""
@@ -1742,7 +1742,7 @@ class TestXlsxHandlerFetch:
             {"name": "Bob", "age": 25}
         ]
 
-    @patch('dal.xlsx_handler.load_workbook')
+    @patch('data_access_layer.xlsx_handler.load_workbook')
     @patch('pathlib.Path.exists', return_value=True)
     def test_fetch_with_filter(self, mock_exists, mock_load):
         """Filter is applied to rows."""
@@ -1765,7 +1765,7 @@ class TestXlsxHandlerFetch:
         )
         assert result == [{"name": "Alice", "age": 30}]
 
-    @patch('dal.xlsx_handler.load_workbook')
+    @patch('data_access_layer.xlsx_handler.load_workbook')
     @patch('pathlib.Path.exists', return_value=True)
     def test_fetch_with_cols_allowlist(self, mock_exists, mock_load):
         """Cols parameter acts as allowlist - only specified columns included."""
@@ -1787,7 +1787,7 @@ class TestXlsxHandlerFetch:
         )
         assert result == [{"name": "Alice", "age": 30}]
 
-    @patch('dal.xlsx_handler.load_workbook')
+    @patch('data_access_layer.xlsx_handler.load_workbook')
     @patch('pathlib.Path.exists', return_value=True)
     def test_fetch_with_custom_sheet_name(self, mock_exists, mock_load):
         """Handler uses custom sheet name from initialization."""
@@ -1824,7 +1824,7 @@ class TestXlsxHandlerStore:
         )
         assert result == 0
 
-    @patch('dal.xlsx_handler.Workbook')
+    @patch('data_access_layer.xlsx_handler.Workbook')
     @patch('pathlib.Path.exists', return_value=True)
     def test_store_all_data(self, mock_exists, mock_wb_class):
         """Store writes all data when no filters specified."""

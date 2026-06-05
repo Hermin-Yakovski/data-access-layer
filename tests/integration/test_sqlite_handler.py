@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 import sqlite3
 
-from dal.sqlite_handler import SqliteHandler
+from data_access_layer.sqlite_handler import SqliteHandler
 
 
 @pytest.fixture

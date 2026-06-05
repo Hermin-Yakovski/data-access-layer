@@ -8,7 +8,7 @@ except ImportError:
     HAS_OPENPYXL = False
 
 if HAS_OPENPYXL:
-    from dal import XlsxHandler
+    from data_access_layer import XlsxHandler
 
 
 @pytest.fixture

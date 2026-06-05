@@ -36,7 +36,7 @@
 from pathlib import Path
 import pytest
 
-from dal.sqlite_handler import SqliteHandler
+from data_access_layer.sqlite_handler import SqliteHandler
 
 
 class TestSqliteHandlerInit:
@@ -53,7 +53,7 @@ class TestSqliteHandlerInit:
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/test_sqlite_handler.py::TestSqliteHandlerInit::test_init_stores_path_attribute -v`
-Expected: FAIL with "cannot import 'SqliteHandler' from 'dal.sqlite_handler'"
+Expected: FAIL with "cannot import 'SqliteHandler' from 'data_access_layer.sqlite_handler'"
 
 - [ ] **Step 3: Write minimal implementation**
 

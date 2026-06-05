@@ -112,8 +112,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
-from dal.abc import AsyncDataHandler
-from dal.post_processing import PostProcessingMixin
+from data_access_layer.abc import AsyncDataHandler
+from data_access_layer.post_processing import PostProcessingMixin
 
 
 class AsyncJsonHandler(PostProcessingMixin, AsyncDataHandler):

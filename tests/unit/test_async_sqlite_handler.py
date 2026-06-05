@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from dal.sqlite_handler import AsyncSqliteHandler
+from data_access_layer.sqlite_handler import AsyncSqliteHandler
 
 @pytest.mark.asyncio
 async def test_async_sqlite_fetch_basic(tmp_path):

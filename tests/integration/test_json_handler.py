@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 import pytest
 
-from dal import JsonHandler
+from data_access_layer import JsonHandler
 
 
 @pytest.fixture

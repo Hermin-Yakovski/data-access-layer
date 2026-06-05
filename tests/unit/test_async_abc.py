@@ -1,5 +1,5 @@
 import pytest
-from dal.abc import AsyncDataHandler
+from data_access_layer.abc import AsyncDataHandler
 
 def test_async_data_handler_is_abstract():
     """AsyncDataHandler should be an abstract class."""

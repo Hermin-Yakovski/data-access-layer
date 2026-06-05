@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 import pytest
 
-from dal.csv_handler import CsvHandler
+from data_access_layer.csv_handler import CsvHandler
 
 
 class TestCsvHandlerFetch:

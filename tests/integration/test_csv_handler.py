@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from dal import CsvHandler
+from data_access_layer import CsvHandler
 
 
 @pytest.fixture

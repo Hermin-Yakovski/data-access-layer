@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 try:
-    from dal.xlsx_handler import XlsxHandler
+    from data_access_layer.xlsx_handler import XlsxHandler
     HAS_OPENPYXL = True
 except ImportError:
     HAS_OPENPYXL = False

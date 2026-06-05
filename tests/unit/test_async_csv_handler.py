@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from dal.csv_handler import AsyncCsvHandler
+from data_access_layer.csv_handler import AsyncCsvHandler
 
 @pytest.mark.asyncio
 async def test_async_csv_fetch_basic(tmp_path):

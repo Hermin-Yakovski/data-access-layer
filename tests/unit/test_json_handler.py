@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 import pytest
 
-from dal.json_handler import JsonHandler
+from data_access_layer.json_handler import JsonHandler
 
 
 class TestJsonHandlerFetch:

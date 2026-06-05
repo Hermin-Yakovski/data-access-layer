@@ -2,7 +2,7 @@ from pathlib import Path
 import pickle
 import pytest
 
-from dal import PklHandler
+from data_access_layer import PklHandler
 
 
 @pytest.fixture

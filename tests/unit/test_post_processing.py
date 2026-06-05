@@ -1,5 +1,5 @@
 import pytest
-from dal.post_processing import PostProcessingMixin
+from data_access_layer.post_processing import PostProcessingMixin
 
 
 class TestCoerceValue:

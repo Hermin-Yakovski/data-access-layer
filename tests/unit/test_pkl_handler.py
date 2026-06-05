@@ -4,7 +4,7 @@ from unittest.mock import mock_open, patch
 import pickle
 import pytest
 
-from dal.pkl_handler import PklHandler
+from data_access_layer.pkl_handler import PklHandler
 
 
 class TestPklHandlerFetch:

@@ -84,7 +84,7 @@ Create: `tests/unit/test_async_abc.py`
 
 ```python
 import pytest
-from dal.abc import AsyncDataHandler
+from data_access_layer.abc import AsyncDataHandler
 
 def test_async_data_handler_is_abstract():
     """AsyncDataHandler should be an abstract class."""
@@ -239,7 +239,7 @@ Create: `tests/unit/test_async_json_handler.py`
 ```python
 import pytest
 from pathlib import Path
-from dal.json_handler import AsyncJsonHandler
+from data_access_layer.json_handler import AsyncJsonHandler
 
 @pytest.mark.asyncio
 async def test_async_json_fetch_basic(tmp_path):
@@ -483,7 +483,7 @@ Create: `tests/unit/test_async_csv_handler.py`
 ```python
 import pytest
 from pathlib import Path
-from dal.csv_handler import AsyncCsvHandler
+from data_access_layer.csv_handler import AsyncCsvHandler
 
 @pytest.mark.asyncio
 async def test_async_csv_fetch_basic(tmp_path):
@@ -664,7 +664,7 @@ Create: `tests/unit/test_async_pkl_handler.py`
 ```python
 import pytest
 from pathlib import Path
-from dal.pkl_handler import AsyncPklHandler
+from data_access_layer.pkl_handler import AsyncPklHandler
 
 @pytest.mark.asyncio
 async def test_async_pkl_fetch_basic(tmp_path):
@@ -837,7 +837,7 @@ Create: `tests/unit/test_async_xlsx_handler.py`
 ```python
 import pytest
 from pathlib import Path
-from dal.xlsx_handler import AsyncXlsxHandler
+from data_access_layer.xlsx_handler import AsyncXlsxHandler
 
 @pytest.mark.asyncio
 async def test_async_xlsx_fetch_basic(tmp_path):
@@ -1047,7 +1047,7 @@ Create: `tests/unit/test_async_sqlite_handler.py`
 ```python
 import pytest
 from pathlib import Path
-from dal.sqlite_handler import AsyncSqliteHandler
+from data_access_layer.sqlite_handler import AsyncSqliteHandler
 
 @pytest.mark.asyncio
 async def test_async_sqlite_fetch_basic(tmp_path):

@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from dal.xlsx_handler import AsyncXlsxHandler
+from data_access_layer.xlsx_handler import AsyncXlsxHandler
 
 @pytest.mark.asyncio
 async def test_async_xlsx_fetch_basic(tmp_path):

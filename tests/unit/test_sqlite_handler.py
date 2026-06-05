@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from dal.sqlite_handler import SqliteHandler
+from data_access_layer.sqlite_handler import SqliteHandler
 
 
 class TestSqliteHandlerInit:
@@ -13,8 +13,8 @@ class TestSqliteHandlerInit:
         assert handler is not None
 
     def test_sqlite_handler_exported_from_dal_package(self):
-        """SqliteHandler should be importable from dal package."""
-        from dal import SqliteHandler
+        """SqliteHandler should be importable from data_access_layer package."""
+        from data_access_layer import SqliteHandler
         assert SqliteHandler is not None
 
 
