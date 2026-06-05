@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 
@@ -26,25 +25,25 @@ class PostProcessingMixin:
             TypeError: If conversion fails
         """
         if value is None:
-            if target_type == int:
+            if target_type is int:
                 return 0
-            elif target_type == float:
+            elif target_type is float:
                 return 0.0
-            elif target_type == str:
+            elif target_type is str:
                 return ""
-            elif target_type == bool:
+            elif target_type is bool:
                 return False
             else:
                 raise TypeError(f"Unsupported target type: {target_type}")
 
         try:
-            if target_type == int:
+            if target_type is int:
                 return int(value)
-            elif target_type == float:
+            elif target_type is float:
                 return float(value)
-            elif target_type == str:
+            elif target_type is str:
                 return str(value)
-            elif target_type == bool:
+            elif target_type is bool:
                 if isinstance(value, str):
                     lower_val = value.lower()
                     if lower_val in ("true", "1", "yes"):
