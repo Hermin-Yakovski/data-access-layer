@@ -32,8 +32,8 @@ class CsvHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from CSV file.
 
@@ -79,9 +79,9 @@ class CsvHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to CSV file.
 
@@ -161,8 +161,8 @@ class AsyncCsvHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from CSV file asynchronously.
 
@@ -207,9 +207,9 @@ class AsyncCsvHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to CSV file asynchronously.
 

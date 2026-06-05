@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type
 
 
 class DataHandler(ABC):
@@ -22,6 +22,7 @@ class DataHandler(ABC):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from the source.
@@ -32,6 +33,7 @@ class DataHandler(ABC):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable that receives a row dict, returns True to include
             limit: Maximum number of rows to return (applied AFTER filtering)
+            types: Optional dict mapping column names to types for type conversion
             strict: If True, raise exceptions; if False, return empty list on error
 
         Returns:
@@ -53,6 +55,7 @@ class DataHandler(ABC):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -65,6 +68,7 @@ class DataHandler(ABC):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable that receives a row dict, returns True to include
             limit: Maximum number of rows to store (applied AFTER filtering)
+            types: Optional dict mapping column names to types for type conversion
             overwrite: If True, replace existing file; if False, append/merge
             strict: If True, raise exceptions; if False, return 0 on error
 
@@ -98,6 +102,7 @@ class AsyncDataHandler(ABC):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from the source asynchronously.
@@ -108,6 +113,7 @@ class AsyncDataHandler(ABC):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable that receives a row dict, returns True to include
             limit: Maximum number of rows to return (applied AFTER filtering)
+            types: Optional dict mapping column names to types for type conversion
             strict: If True, raise exceptions; if False, return empty list on error
 
         Returns:
@@ -129,6 +135,7 @@ class AsyncDataHandler(ABC):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -141,6 +148,7 @@ class AsyncDataHandler(ABC):
             cols: Columns to include (allowlist, None = all columns)
             filter_: Optional callable that receives a row dict, returns True to include
             limit: Maximum number of rows to store (applied AFTER filtering)
+            types: Optional dict mapping column names to types for type conversion
             overwrite: If True, replace existing file; if False, append/merge
             strict: If True, raise exceptions; if False, return 0 on error
 

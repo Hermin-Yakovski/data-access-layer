@@ -31,8 +31,8 @@ class JsonHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from JSON file.
 
@@ -89,9 +89,9 @@ class JsonHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to JSON file.
 
@@ -164,8 +164,8 @@ class AsyncJsonHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from JSON file asynchronously.
 
@@ -223,9 +223,9 @@ class AsyncJsonHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to JSON file asynchronously.
 

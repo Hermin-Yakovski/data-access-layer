@@ -44,7 +44,7 @@ class XlsxHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from XLSX file.
@@ -113,7 +113,7 @@ class XlsxHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -222,7 +222,7 @@ class AsyncXlsxHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from XLSX file asynchronously.
@@ -243,7 +243,7 @@ class AsyncXlsxHandler(PostProcessingMixin, AsyncDataHandler):
             if not path.exists():
                 raise FileNotFoundError(f"File '{path}' does not exist")
 
-            def _load_workbook():
+            def _load_workbook() -> List[Dict[str, Any]]:
                 wb = load_workbook(path, read_only=True, data_only=True)
                 try:
                     ws = wb[table]
@@ -296,7 +296,7 @@ class AsyncXlsxHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -327,7 +327,7 @@ class AsyncXlsxHandler(PostProcessingMixin, AsyncDataHandler):
             # Apply post-processing
             data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
-            def _write_workbook(data_to_store):
+            def _write_workbook(data_to_store: List[Dict[str, Any]]) -> int:
                 # Handle workbook creation or loading
                 if path.exists():
                     wb = load_workbook(path)
@@ -348,7 +348,7 @@ class AsyncXlsxHandler(PostProcessingMixin, AsyncDataHandler):
                         for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
                             if row_idx == self.header_row:
                                 headers = list(row)
-                            elif row_idx > self.header_row:
+                            elif headers is not None and row_idx > self.header_row:
                                 row_dict = {}
                                 for i, header in enumerate(headers):
                                     if i < len(row):

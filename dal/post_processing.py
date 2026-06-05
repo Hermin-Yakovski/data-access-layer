@@ -9,7 +9,7 @@ class PostProcessingMixin:
     and limiting that was previously duplicated across all handlers.
     """
 
-    def _coerce_value(self, value: Any, target_type: Type) -> Any:
+    def _coerce_value(self, value: Any, target_type: Type[Any]) -> Any:
         """Coerce a single value to the target type.
 
         Handles None values by converting to defaults.
@@ -59,7 +59,7 @@ class PostProcessingMixin:
         except (ValueError, TypeError) as e:
             raise TypeError(f"Cannot convert {type(value).__name__} value '{value}' to {target_type.__name__}") from e
 
-    def _coerce_row(self, row: Dict[str, Any], types: Dict[str, Type]) -> Dict[str, Any]:
+    def _coerce_row(self, row: Dict[str, Any], types: Dict[str, Type[Any]]) -> Dict[str, Any]:
         """Coerce values in a row to their target types.
 
         Behavior:
@@ -103,7 +103,7 @@ class PostProcessingMixin:
     def _apply_processing(
         self,
         data: List[Dict[str, Any]],
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,

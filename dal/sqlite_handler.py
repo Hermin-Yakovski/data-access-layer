@@ -22,7 +22,7 @@ class SqliteHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from SQLite table.
@@ -82,7 +82,7 @@ class SqliteHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:
@@ -168,7 +168,7 @@ class AsyncSqliteHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
     ) -> List[Dict[str, Any]]:
         """Fetch data from SQLite table asynchronously.
@@ -226,7 +226,7 @@ class AsyncSqliteHandler(PostProcessingMixin, AsyncDataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
-        types: Optional[Dict[str, Type]] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
     ) -> int:

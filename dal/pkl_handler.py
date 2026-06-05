@@ -29,8 +29,8 @@ class PklHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> List[Dict[str, Any]]:
         """Fetch data from pickle file.
 
@@ -87,9 +87,9 @@ class PklHandler(PostProcessingMixin, DataHandler):
         cols: Optional[Iterable[str]] = None,
         filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
         limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
         overwrite: bool = True,
         strict: bool = True,
-        types: Optional[Dict[str, Type]] = None,
     ) -> int:
         """Store data to pickle file.
 
@@ -144,7 +144,16 @@ class AsyncPklHandler(PostProcessingMixin, AsyncDataHandler):
     def __init__(self, protocol: int = 4):
         self.protocol = protocol
 
-    async def fetch(self, path, table, cols=None, filter_=None, limit=None, strict=True, types=None):
+    async def fetch(
+        self,
+        path: Path,
+        table: str,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
+        strict: bool = True,
+    ) -> List[Dict[str, Any]]:
         try:
             if not path.exists():
                 raise FileNotFoundError(f"Directory '{path}' does not exist")
@@ -153,7 +162,7 @@ class AsyncPklHandler(PostProcessingMixin, AsyncDataHandler):
             if not file_path.exists():
                 raise FileNotFoundError(f"File '{file_path}' not found")
 
-            def _load_pickle():
+            def _load_pickle() -> Any:
                 with open(file_path, "rb") as f:
                     return pickle.load(f)
 
@@ -176,7 +185,18 @@ class AsyncPklHandler(PostProcessingMixin, AsyncDataHandler):
                 raise
             return []
 
-    async def store(self, data, path, table, cols=None, filter_=None, limit=None, overwrite=True, strict=True, types=None):
+    async def store(
+        self,
+        data: List[Dict[str, Any]],
+        path: Path,
+        table: str,
+        cols: Optional[Iterable[str]] = None,
+        filter_: Optional[Callable[[Dict[str, Any]], bool]] = None,
+        limit: Optional[int] = None,
+        types: Optional[Dict[str, Type[Any]]] = None,
+        overwrite: bool = True,
+        strict: bool = True,
+    ) -> int:
         try:
             if not path.exists():
                 raise FileNotFoundError(f"Directory '{path}' does not exist")
@@ -186,7 +206,7 @@ class AsyncPklHandler(PostProcessingMixin, AsyncDataHandler):
 
             data_to_store = self._apply_processing(data_to_store, types, cols, filter_, limit)
 
-            def _dump_pickle(data_to_process=data_to_store):
+            def _dump_pickle(data_to_process: List[Dict[str, Any]] = data_to_store) -> int:
                 # For append mode, read existing data and merge
                 if not overwrite and file_path.exists():
                     with open(file_path, "rb") as f:
